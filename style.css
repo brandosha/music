@@ -1,0 +1,16 @@
+.scroll-y {
+  overflow-y: scroll;
+}
+
+.playback-button {
+  color: inherit;
+  font-size: 0.5rem;
+  background-color: #88888830;
+  border-radius: 2em;
+  border: none;
+  padding: 1em;
+}
+
+.border-bottom {
+  border-bottom: 1px solid #88888840!important; /* override Bootstrap */
+}

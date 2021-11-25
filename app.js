@@ -33,17 +33,28 @@ var app = new Vue({
       if (afterNext) { afterNext.getFile() }
     },
     async play(song) {
-      this.currentSong = song
-      player.play()
+      console.log(song, !!song._filePromise)
+      if (song._filePromise) {
+        const file = await song.getFile()
 
-      const file = await song.getFile()
-      player.src = srcUrl(file)
-      // player.currentTime = 0
-      player.play()
+        player.pause()
+        player.src = srcUrl(file)
+        player.play()
+      } else {
+        player.play()
+
+        const file = await song.getFile()
+        player.src = srcUrl(file)
+        player.play()
+      }
+
+      this.currentSong = song
     },
     async skip() {
       const nextSong = this.queue[0]
       if (nextSong) {
+        player.play()
+
         await nextSong.getFile()
         player.currentTime = player.duration - 0.1
       }

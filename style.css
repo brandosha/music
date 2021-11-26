@@ -9,8 +9,6 @@
   border-radius: 2em;
   border: none;
   padding: 1em;
-
-  transition: all ease-out 0.2s;
 }
 .playback-button:active {
   background-color: #88888860;

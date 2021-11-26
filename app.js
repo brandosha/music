@@ -2,16 +2,24 @@ var app = new Vue({
   el: "#app",
   data: {
     view: "library",
+    nav: ["~All Songs", "~Library"],
+
     songs: [],
-    queue: [],
+    playlists: [],
     
+    queue: [],
     currentSong: null,
     songProgress: 0,
     paused: false,
 
-    filter: "",
+    search: "",
     willShuffle: false,
     willLoop: false,
+
+    playlist: {
+      adding: null,
+      name: ""
+    },
 
     player: null
   },
@@ -54,22 +62,26 @@ var app = new Vue({
         player.play()
       }
 
-      const file = await song.getFile()
-      try {
-        player.src = srcUrl(file)
-      } catch (err) {
-        console.log(err)
+      if (!this.currentSong) {
+        await this.preloadNext()
+        this.playNext()
       }
 
-      if (!this.currentSong) {
-        this.playNext()
+      if (this.queue.length === 1 || front) {
+        this.preloadNext()
       }
 
       player.onended = () => this.playNext()
     },
+    async preloadNext() {
+      if (this.queue.length > 0) {
+        const next = this.queue[0]
+        const file = await next.song.getFile()
+        next.player.src = srcUrl(file)
+      }
+    },
     playNext() {
       const next = this.queue.shift()
-      console.log(next)
 
       if (next) {
         this.player = next.player
@@ -79,6 +91,8 @@ var app = new Vue({
         if (this.willLoop) {
           this.queue.push(next)
         }
+
+        this.preloadNext()
       } else {
         this.player = null
         this.currentSong = null
@@ -106,10 +120,17 @@ var app = new Vue({
         }
       }
     },
-    upload(e) {
+    async upload(e) {
       const files = e.target.files
+
+      const promises = []
       for (let i = 0; i < files.length; i++) {
-        db.add(files[i])
+        promises.push(db.add(files[i]))
+      }
+
+      if (this.nav[0].startsWith("playlist~")) {
+        const songs = await Promise.all(promises)
+        songs.forEach(song => song.addToPlaylist(this.currentPage))
       }
     },
     async remove(song, requestConfirmation = true) {
@@ -139,6 +160,32 @@ var app = new Vue({
         song.remove()
       }
     },
+    addSelectedToPlaylist() {
+      const song = this.playlist.adding
+      if (Array.isArray(this.playlist.adding)) {
+        const songs = song
+        songs.forEach(song => song.addToPlaylist(this.playlist.name))
+      } else {
+        song.addToPlaylist(this.playlist.name)
+      }
+
+      if (this.nav[this.nav.length - 1] !== "~Library") {
+        this.nav.push("~Library")
+      }
+
+      this.playlist.adding = null
+      this.playlist.name = ""
+    },
+    removePlaylist() {
+      if (confirm(`Are you sure you want to delete the playlist '${this.currentPage}'?`)) {
+        db.removePlaylist(this.currentPage)
+        if (db.playlists.length > 0) {
+          this.nav = ["~Library"]
+        } else {
+          this.nav = ["~All Songs"]
+        }
+      }
+    },
     formatTime(seconds) {
       if (isNaN(seconds)) {
         return "--:--"
@@ -154,13 +201,33 @@ var app = new Vue({
   },
   computed: {
     filteredSongs() {
-      let filter = this.filter.trim().toLowerCase()
-      if (filter === "") {
-        return this.songs
+      let songs = this.songs
+
+      if (this.nav[0].startsWith("playlist~")) {
+        const name = this.currentPage
+        songs = db._playlistMap[name].songs
+      }
+
+      let search = this.search.trim().toLowerCase()
+      if (search === "") {
+        return songs
       } else {
-        return this.songs.filter(song => {
-          return song.title.toLowerCase().includes(filter)
+        return songs.filter(song => {
+          return song.title.toLowerCase().includes(search)
         })
+      }
+    },
+
+    currentPage() {
+      const page = this.nav[0]
+      if (page) {
+        return page.split("~").slice(1).join("~")
+      }
+    },
+    previousPage() {
+      const page = this.nav[1]
+      if (page) {
+        return page.split("~").slice(1).join("~")
       }
     }
   },
@@ -200,6 +267,19 @@ var app = new Vue({
   }
 })
 
+Vue.component("nav-button", {
+  props: ["page"],
+  template: document.getElementById("nav-button").innerHTML,
+  methods: {
+    navigate() {
+      app.nav.unshift(this.page)
+      localStorage.setItem("music-nav", JSON.stringify(app.nav))
+
+      app.search = ""
+    }
+  }
+})
+
 setInterval(() => {
   if (app.player && app.player.paused !== app.paused) {
     app.paused = app.player.paused
@@ -216,6 +296,15 @@ setInterval(() => {
 
 db.ready.then(() => {
   app.songs = db.songs
+  const playlists = app.playlists = db.playlists
+
+  if (playlists.length > 0) {
+    app.nav = ["~All Songs", "~Library"]
+  } else {
+    app.nav = ["~All Songs"]
+  }
+
+  app.nav = JSON.parse(localStorage.getItem("music-nav")) || app.nav
 })
 
 const srcCache = new Map()

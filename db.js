@@ -97,6 +97,7 @@
       const fileStore = transaction.objectStore('files')
 
       this._filePromise = idbPromise(fileStore.get(this.id))
+      this._filePromise.then(file => this.file = file)
       return this._filePromise
     }
 

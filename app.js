@@ -4,59 +4,76 @@ var app = new Vue({
     view: "library",
     songs: [],
     queue: [],
+    
     currentSong: null,
+    songProgress: 0,
+
     filter: "",
+
+    player: null
   },
   methods: {
-    addToQueue(song, front = false) {
-      if (this.queue.length === 0 && this.currentSong === null) {
-        this.play(song)
+    async addToQueue(song, front = false) {
+      const player = new Audio()
+
+      const queueObj = { song, player }
+      if (front) {
+        this.queue.unshift(queueObj)
       } else {
-        if (front) {
-          this.queue.unshift(song)
-          song.getFile()
-        } else {
-          this.queue.push(song)
-        }
+        this.queue.unshift(queueObj)
       }
+
+      if (!this.currentSong) {
+        player.play()
+      }
+
+      const file = await song.getFile()
+      try {
+        player.src = srcUrl(file)
+      } catch (err) {
+        console.log(err)
+      }
+
+      if (!this.currentSong) {
+        this.playNext()
+      }
+
+      player.onended = () => this.playNext()
     },
     playNext() {
-      const nextSong = this.queue.shift()
-      this.currentSong = nextSong
+      const next = this.queue.shift()
+      console.log(next)
 
-      if (nextSong) {
-        this.play(nextSong)
-      }
+      if (next) {
+        this.player = next.player
+        next.player.play()
 
-      // Preload next song
-      const afterNext = this.queue[0]
-      if (afterNext) { afterNext.getFile() }
-    },
-    async play(song) {
-      console.log(song, !!song._filePromise)
-      if (song._filePromise) {
-        const file = await song.getFile()
-
-        player.pause()
-        player.src = srcUrl(file)
-        player.play()
+        this.currentSong = next.song
       } else {
-        player.play()
-
-        const file = await song.getFile()
-        player.src = srcUrl(file)
-        player.play()
+        this.player = null
+        this.currentSong = null
+        this.songProgress = 0
       }
-
-      this.currentSong = song
     },
-    async skip() {
-      const nextSong = this.queue[0]
-      if (nextSong) {
-        player.play()
-
-        await nextSong.getFile()
-        player.currentTime = player.duration - 0.1
+    skip() {
+      if (this.player) {
+        this.player.currentTime = this.player.duration - 0.1
+        this.player.play()
+      }
+    },
+    seek() {
+      const progress = this.songProgress
+      if (this.player) {
+        this.player.currentTime = progress * this.player.duration
+      }
+    },
+    togglePlayback() {
+      if (this.player) {
+        if (this.player.paused) {
+          this.player.play()
+        } else {
+          this.player.pause()
+        }
       }
     },
     upload(e) {
@@ -87,8 +104,11 @@ var app = new Vue({
   }
 })
 
-const player = document.getElementsByTagName("audio")[0]
-player.addEventListener("ended", app.playNext)
+setInterval(() => {
+  if (app.player) {
+    app.songProgress = app.player.currentTime / app.player.duration
+  }
+}, 15)
 
 db.ready.then(() => {
   app.songs = db.songs

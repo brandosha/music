@@ -7,6 +7,7 @@ var app = new Vue({
     
     currentSong: null,
     songProgress: 0,
+    paused: false,
 
     filter: "",
     willShuffle: false,
@@ -200,6 +201,10 @@ var app = new Vue({
 })
 
 setInterval(() => {
+  if (app.player && app.player.paused !== app.paused) {
+    app.paused = app.player.paused
+  }
+
   if (app.player && !app.player.paused) {
     if (app.player.duration === 0 || isNaN(app.player.duration)) {
       app.songProgress = 0

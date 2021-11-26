@@ -9,11 +9,37 @@ var app = new Vue({
     songProgress: 0,
 
     filter: "",
+    willShuffle: false,
+    willLoop: false,
 
     player: null
   },
   methods: {
     async addToQueue(song, front = false) {
+      if (Array.isArray(song)) {
+        let songs = song.slice()
+
+        if (songs.length === 1) {
+          song = songs[0]
+        } else if (songs.length > 0) {
+          if (this.willShuffle) {
+            shuffle(songs)
+          }
+          if (front) {
+            songs = songs.reverse()
+            if (!this.currentSong) {
+              songs.unshift(songs.pop())
+            }
+          }
+
+          for (const song of songs) {
+            await this.addToQueue(song, front)
+          }
+
+          return
+        }
+      }
+
       const player = new Audio()
 
       const queueObj = { song, player }
@@ -47,8 +73,11 @@ var app = new Vue({
       if (next) {
         this.player = next.player
         next.player.play()
-
+        
         this.currentSong = next.song
+        if (this.willLoop) {
+          this.queue.push(next)
+        }
       } else {
         this.player = null
         this.currentSong = null
@@ -57,7 +86,7 @@ var app = new Vue({
     },
     skip() {
       if (this.player) {
-        this.player.currentTime = this.player.duration - 0.1
+        this.player.currentTime = this.player.duration - 0.0001
         this.player.play()
       }
     },
@@ -81,7 +110,35 @@ var app = new Vue({
       for (let i = 0; i < files.length; i++) {
         db.add(files[i])
       }
-    }
+    },
+    async remove(song, requestConfirmation = true) {
+      if (Array.isArray(song)) {
+        const songs = song
+
+        if (songs.length === 1) {
+          song = songs[0]
+        } else if (songs.length > 0) {
+          if (requestConfirmation && !confirm(`Delete ${songs.length} songs?`)) {
+            return
+          }
+  
+          for (const song of songs) {
+            await this.remove(song, false)
+          }
+  
+          return
+        }
+      }
+
+      if (requestConfirmation) {
+        if (confirm(`Delete '${song.title}'?`)) {
+          song.remove()
+        }
+      } else {
+        song.remove()
+      }
+    },
+    shuffle
   },
   computed: {
     fullQueue() {
@@ -101,6 +158,32 @@ var app = new Vue({
         })
       }
     }
+  },
+  watch: {
+    currentSong() {
+      if (this.currentSong) {
+        document.title = this.currentSong.title
+      } else {
+        document.title = "Not Playing"
+      }
+    },
+    songs() {
+      const songs = this.songs
+
+      let outOfOrder = false
+      for (let i = 1; i < songs.length; i++) {
+        const a = songs[i - 1].title
+        const b = songs[i].title
+
+        if (a.localeCompare(b) === 1) {
+          outOfOrder = true
+          break
+        }
+      }
+      if (outOfOrder) {
+        songs.sort((a, b) => a.title.localeCompare(b.title))
+      }
+    }
   }
 })
 
@@ -112,7 +195,6 @@ setInterval(() => {
 
 db.ready.then(() => {
   app.songs = db.songs
-  app.songs.sort((a, b) => a.title.localeCompare(b.title))
 })
 
 const srcCache = new Map()
@@ -125,5 +207,25 @@ function srcUrl(file) {
     return url
   }
 }
+
+// https://stackoverflow.com/a/2450976
+function shuffle(array) {
+  let currentIndex = array.length,  randomIndex;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+}
+
 
 navigator.serviceWorker.register("service-worker.js")

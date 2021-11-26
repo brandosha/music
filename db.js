@@ -12,13 +12,20 @@
     }
 
     async init() {
-      const openRequest = indexedDB.open('music-db', 1)
+      const openRequest = indexedDB.open('music-db', 2)
       openRequest.onupgradeneeded = (event) => {
         const db = openRequest.result
 
+        db.deleteObjectStore('files')
+        db.deleteObjectStore('titles')
+        db.deleteObjectStore('playlists')
+
         const fileStore = db.createObjectStore('files', { autoIncrement: true })
 
-        const titleStore = db.createObjectStore('titles', { keyPath: 'id' })
+        const songStore = db.createObjectStore('songs', { keyPath: 'id' })
+        songStore.createIndex('title', 'title', { unique: false })
+        songStore.createIndex('artist', 'artist', { unique: false })
+        songStore.createIndex('album', 'album', { unique: false })
 
         const playlistStore = db.createObjectStore('playlists', { autoIncrement: true })
         playlistStore.createIndex('name', 'name', { unique: false })
@@ -27,22 +34,22 @@
       /** @type { IDBDatabase } */
       this.database = await idbPromise(openRequest)
 
-      const transaction = this.database.transaction(['titles'], 'readonly')
-      const titleStore = transaction.objectStore('titles')
+      const transaction = this.database.transaction(['songs'], 'readonly')
+      const songStore = transaction.objectStore('songs')
 
-      this.titles = await idbPromise(titleStore.getAll())
-      this.songs = this.titles.map(obj => new Song(obj.id, obj.title))
+      this.songs = await idbPromise(songStore.getAll())
+      this.songs = this.songs.map(obj => new Song(obj.id, obj.title))
     }
 
     async add(file) {
-      const transaction = this.database.transaction(['files', 'titles'], 'readwrite')
+      const transaction = this.database.transaction(['files', 'songs'], 'readwrite')
       const fileStore = transaction.objectStore('files')
-      const titleStore = transaction.objectStore('titles')
+      const songStore = transaction.objectStore('songs')
 
       const key = await idbPromise(fileStore.put(file))
 
       const title = file.name.replace(/\.[^/.]+$/, '')
-      await idbPromise(titleStore.put({ id: key, title }))
+      await idbPromise(songStore.put({ id: key, title }))
 
       const song = new Song(key, title)
       song.file = file
@@ -52,12 +59,12 @@
     }
 
     async remove(id) {
-      const transaction = this.database.transaction(['files', 'titles'], 'readwrite')
+      const transaction = this.database.transaction(['files', 'songs'], 'readwrite')
       const fileStore = transaction.objectStore('files')
-      const titleStore = transaction.objectStore('titles')
+      const songStore = transaction.objectStore('songs')
 
       await idbPromise(fileStore.delete(id))
-      await idbPromise(titleStore.delete(id))
+      await idbPromise(songStore.delete(id))
 
       for (let i = 0; i < this.songs.length; i++) {
         if (this.songs[i].id === id) {
@@ -68,12 +75,12 @@
     }
 
     async clear() {
-      const transaction = this.database.transaction(['files', 'titles'], 'readwrite')
+      const transaction = this.database.transaction(['files', 'songs'], 'readwrite')
       const fileStore = transaction.objectStore('files')
-      const titleStore = transaction.objectStore('titles')
+      const songStore = transaction.objectStore('songs')
 
       await idbPromise(fileStore.clear())
-      await idbPromise(titleStore.clear())
+      await idbPromise(songStore.clear())
 
       while (this.songs.length) {
         this.songs.pop()
@@ -84,10 +91,16 @@
   /** @type { Database } */
   const db = window.db = new Database()
 
+  const existingSongs = { }
+
   class Song {
     constructor(id, title) {
+      if (existingSongs[id]) return existingSongs[id]
+
       this.id = id
       this.title = title
+
+      existingSongs[id] = this
     }
 
     getFile() {

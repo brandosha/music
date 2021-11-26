@@ -16,9 +16,11 @@
       openRequest.onupgradeneeded = (event) => {
         const db = openRequest.result
 
-        db.deleteObjectStore('files')
-        db.deleteObjectStore('titles')
-        db.deleteObjectStore('playlists')
+        try {
+          db.deleteObjectStore('files')
+          db.deleteObjectStore('titles')
+          db.deleteObjectStore('playlists')
+        } catch (error) { }
 
         const fileStore = db.createObjectStore('files', { autoIncrement: true })
 

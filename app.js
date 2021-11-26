@@ -46,7 +46,7 @@ var app = new Vue({
       if (front) {
         this.queue.unshift(queueObj)
       } else {
-        this.queue.unshift(queueObj)
+        this.queue.push(queueObj)
       }
 
       if (!this.currentSong) {
@@ -118,7 +118,7 @@ var app = new Vue({
         if (songs.length === 1) {
           song = songs[0]
         } else if (songs.length > 0) {
-          if (requestConfirmation && !confirm(`Delete ${songs.length} songs?`)) {
+          if (requestConfirmation && !confirm(`Are you sure you want to delete ${songs.length} songs?`)) {
             return
           }
   
@@ -131,23 +131,27 @@ var app = new Vue({
       }
 
       if (requestConfirmation) {
-        if (confirm(`Delete '${song.title}'?`)) {
+        if (confirm(`Are you sure you want to delete '${song.title}'?`)) {
           song.remove()
         }
       } else {
         song.remove()
       }
     },
+    formatTime(seconds) {
+      if (isNaN(seconds)) {
+        return "--:--"
+      }
+
+      seconds = Math.floor(seconds)
+
+      const minutes = Math.floor(seconds / 60)
+      const secondsLeft = seconds % 60
+      return `${minutes}:${secondsLeft < 10 ? "0" : ""}${secondsLeft}`
+    },
     shuffle
   },
   computed: {
-    fullQueue() {
-      if (this.currentSong) {
-        return [this.currentSong].concat(this.queue)
-      } else {
-        return this.queue
-      }
-    },
     filteredSongs() {
       let filter = this.filter.trim().toLowerCase()
       if (filter === "") {
@@ -183,13 +187,25 @@ var app = new Vue({
       if (outOfOrder) {
         songs.sort((a, b) => a.title.localeCompare(b.title))
       }
+    },
+    willLoop() {
+      const lastSong = this.queue[this.queue.length - 1]
+      if (this.willLoop && this.currentSong && (!lastSong || lastSong.song !== this.currentSong)) {
+        this.addToQueue(this.currentSong)
+      } else if (!this.willLoop && lastSong && lastSong.song === this.currentSong) {
+        this.queue.pop()
+      }
     }
   }
 })
 
 setInterval(() => {
-  if (app.player) {
-    app.songProgress = app.player.currentTime / app.player.duration
+  if (app.player && !app.player.paused) {
+    if (app.player.duration === 0 || isNaN(app.player.duration)) {
+      app.songProgress = 0
+    } else {
+      app.songProgress = app.player.currentTime / app.player.duration
+    }
   }
 }, 15)
 

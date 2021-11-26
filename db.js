@@ -106,6 +106,7 @@
     }
 
     getFile() {
+      if (this.file) return this.file
       if (this._filePromise) return this._filePromise
 
       const transaction = db.database.transaction(['files'], 'readonly')

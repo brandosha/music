@@ -103,7 +103,7 @@
 
           if (song) {
             list.songs.push(song)
-            song.playlists.push(list)
+            song.playlists.add(list.name)
           }
         })
 
@@ -117,8 +117,12 @@
     async add(file) {
       const key = this.lastKey = this.lastKey + 1
 
-      const title = file.name.replace(/\.[^/.]+$/, '')
-      const song = new Song(key, { title })
+      const metadata = (await MusicMetadata.parseBlob(file)).common
+      if (!metadata.title) {
+        metadata.title = file.name.replace(/\.[^/.]+$/, '')
+      }
+
+      const song = new Song(key, metadata)
       song.file = file
       await song.updateInStore()
 
@@ -190,7 +194,7 @@
       if (!id || !data) return null
 
       this.id = id
-      this.playlists = []
+      this.playlists = new Set()
 
       this.title = data.title || "unknown"
       this.artist = data.artist || "unknown"
@@ -312,9 +316,13 @@
     }
 
     async remove() {
-      await Promise.all(
-        this.playlists.map(playlist => this.removeFromPlaylist(playlist.name))
-      )
+      const promises = []
+      this.playlists.forEach(name => {
+        promises.push(
+          this.removeFromPlaylist(name)
+        )
+      })
+      await Promise.all(promises)
 
       await db.removeSong(this.id)
     }
@@ -338,6 +346,8 @@
         db.playlists.push(newList)
         db._playlistMap[name] = newList
       }
+
+      this.playlists.add(name)
     }
 
     async removeFromPlaylist(name) {
@@ -357,6 +367,8 @@
           list.songs.splice(index, 1)
         }
       }
+
+      this.playlists.delete(name)
     }
   }
 }

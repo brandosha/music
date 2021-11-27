@@ -32,9 +32,9 @@
               </button>
             </div>
 
-            <h4 class="m-0 text-center" style="width: 33.33%;">
+            <h5 class="m-0 text-center text-truncate" style="width: 33.33%;">
               {{ currentPage }}
-            </h4>
+            </h5>
 
             <div class="d-flex justify-content-end" style="width: 33.33%;">
               <button @click="removePlaylist" v-if="nav[0].startsWith('playlist~')" class="btn text-danger">
@@ -415,7 +415,8 @@
       </div>
     </button>
   </template>
-  
+
+  <script src="lib/music-metadata-browser.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
 
   <script src="db.js"></script>

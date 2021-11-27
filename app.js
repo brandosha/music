@@ -5,6 +5,7 @@ var app = new Vue({
     nav: ["~All Songs", "~Library"],
 
     songs: [],
+    artists: [],
     playlists: [],
     
     queue: [],
@@ -19,6 +20,12 @@ var app = new Vue({
     playlist: {
       adding: null,
       name: ""
+    },
+    songEditor: {
+      editing: null,
+      title: "",
+      artist: "",
+      album: ""
     },
 
     player: null
@@ -169,22 +176,95 @@ var app = new Vue({
         song.addToPlaylist(this.playlist.name)
       }
 
-      if (this.nav[this.nav.length - 1] !== "~Library") {
-        this.nav.push("~Library")
-      }
-
       this.playlist.adding = null
       this.playlist.name = ""
     },
     removePlaylist() {
       if (confirm(`Are you sure you want to delete the playlist '${this.currentPage}'?`)) {
         db.removePlaylist(this.currentPage)
-        if (db.playlists.length > 0) {
-          this.nav = ["~Library"]
-        } else {
-          this.nav = ["~All Songs"]
-        }
+        this.nav = ["~Library"]
       }
+    },
+
+    beginEditing(song) {
+      const editor = this.songEditor
+      editor.editing = song
+
+      if (Array.isArray(song)) {
+        if (song.length === 1) {
+          this.beginEditing(song[0])
+          return
+        }
+
+        song = editor.editing = song.slice()
+        const songs = song
+        if (songs.length === 0) {
+          editor.editing = null
+          return
+        }
+
+        let album = songs[0].album
+        let artist = songs[0].artist
+
+        for (const song of songs) {
+          if (album && song.album !== album) {
+            album = ""
+          }
+
+          if (artist && song.artist !== artist) {
+            artist = ""
+          }
+
+          if (!album && !artist) break
+        }
+
+        editor.album = album
+        editor.artist = artist
+      }
+      
+      if (!Array.isArray(song)) {
+        editor.title = song.title
+        editor.artist = song.artist
+        editor.album = song.album
+      }
+
+      editor.defaults = Object.assign({}, editor)
+      editor.defaults.editing = undefined
+    },
+    clearEditor() {
+      this.songEditor = {
+        editing: null,
+        title: "",
+        artist: "",
+        album: ""
+      }
+    },
+    editSelected() {
+      const editor = this.songEditor
+      const song = editor.editing
+
+      const title = editor.title.trim()
+      const artist = editor.artist.trim()
+      const album = editor.album.trim()
+
+      if (Array.isArray(song)) {
+        const songs = song
+
+        songs.forEach(song => {
+          if (artist) song.setArtist(artist)
+          if (album) song.setAlbum(album)
+
+          song.updateInStore()
+        })
+      } else {
+        if (title) song.title = title
+        if (artist) song.setArtist(artist)
+        if (album) song.setAlbum(album)
+
+        song.updateInStore()
+      }
+
+      this.clearEditor()
     },
     formatTime(seconds) {
       if (isNaN(seconds)) {
@@ -203,9 +283,22 @@ var app = new Vue({
     filteredSongs() {
       let songs = this.songs
 
-      if (this.nav[0].startsWith("playlist~")) {
-        const name = this.currentPage
-        songs = db._playlistMap[name].songs
+      try {
+        if (this.nav[0].startsWith("playlist~")) {
+          const name = this.currentPage
+          songs = db._playlistMap[name].songs
+        } else if (this.nav[0].startsWith("artist~")) {
+          const name = this.currentPage
+          songs = db._artistMap[name].songs
+        } else if (this.nav[0].startsWith("album")) {
+          const artist = this.nav[0].split("@")[1].split("~")[0]
+          const album = this.currentPage
+  
+          songs = db._artistMap[artist].albumMap[album].songs
+        }
+      } catch (err) {
+        this.nav.shift()
+        return this.filteredSongs
       }
 
       let search = this.search.trim().toLowerCase()
@@ -216,6 +309,12 @@ var app = new Vue({
           return song.title.toLowerCase().includes(search)
         })
       }
+    },
+    artistsAlbums() {
+      if (!this.nav[0].startsWith("artist~")) return
+
+      const artist = this.currentPage
+      return db._artistMap[artist].albums
     },
 
     currentPage() {
@@ -263,6 +362,10 @@ var app = new Vue({
       } else if (!this.willLoop && lastSong && lastSong.song === this.currentSong) {
         this.queue.pop()
       }
+    },
+    nav(nav) {
+      app.search = ""
+      localStorage.setItem("music-nav", JSON.stringify(nav))
     }
   }
 })
@@ -273,9 +376,6 @@ Vue.component("nav-button", {
   methods: {
     navigate() {
       app.nav.unshift(this.page)
-      localStorage.setItem("music-nav", JSON.stringify(app.nav))
-
-      app.search = ""
     }
   }
 })
@@ -296,13 +396,8 @@ setInterval(() => {
 
 db.ready.then(() => {
   app.songs = db.songs
+  app.artists = db.artists
   const playlists = app.playlists = db.playlists
-
-  if (playlists.length > 0) {
-    app.nav = ["~All Songs", "~Library"]
-  } else {
-    app.nav = ["~All Songs"]
-  }
 
   app.nav = JSON.parse(localStorage.getItem("music-nav")) || app.nav
 })
@@ -336,6 +431,5 @@ function shuffle(array) {
 
   return array;
 }
-
 
 navigator.serviceWorker.register("service-worker.js")

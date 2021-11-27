@@ -1,4 +1,15 @@
-const cacheName = 'network v1 @music'
+const networkCacheName = 'network v1 @music'
+const fileCacheName = 'files v1 @music'
+
+self.addEventListener('install', async event => {
+  const keys = await caches.keys()
+
+  keys.forEach(key => {
+    if (key !== networkCacheName && key !== fileCacheName) {
+      caches.delete(key)
+    }
+  })
+})
 
 self.addEventListener("fetch", event => {
   event.respondWith(
@@ -6,59 +17,72 @@ self.addEventListener("fetch", event => {
   )
 })
 
+const swPath = location.pathname.replace(/\/service-worker\.js$/, "")
+
 async function respond(req) {
   const url = new URL(req.url)
 
-  let cachedResponse = await caches.match(req)
-  if (url.pathname.startsWith("/file-uploads/") && cachedResponse) {
-    const range = req.headers.get("Range")
-    if (range) {
-      const parts = range.split("=")
-      const start = parseInt(parts[1].split("-")[0])
-      const end = parseInt(parts[1].split("-")[1])
+  if (url.pathname.startsWith(swPath + '/file-uploads/')) {
+    const cache = await caches.open(fileCacheName)
+    const cachedFile = await cache.match(req)
 
-      const file = await cachedResponse.blob()
-      const blob = file.slice(start, end + 1)
-      return new Response(blob, {
-        headers: {
-          "Content-Range": `bytes ${start}-${end}/${file.size}`,
-          "Content-Length": end - start + 1,
-          "Content-Type": file.type
-        },
-        status: 206
-      })
+    if (cachedFile) {
+      const range = req.headers.get("Range")
+      if (range) {
+        const parts = range.split("=")
+        const start = parseInt(parts[1].split("-")[0])
+        const end = parseInt(parts[1].split("-")[1])
+
+        const file = await cachedFile.blob()
+        const blob = file.slice(start, end + 1)
+        return new Response(blob, {
+          headers: {
+            "Content-Range": `bytes ${start}-${end}/${file.size}`,
+            "Content-Length": end - start + 1,
+            "Content-Type": file.type
+          },
+          status: 206
+        })
+      }
+
+      return cachedFile
+    } else {
+      return new Response(null, { status: 404 })
     }
-
-    return cachedResponse
-  } else if (url.hostname === 'localhost') {
-    try {
-      const networkResponse = await fetch(req)
-      cache(req, networkResponse.clone())
-
-      return networkResponse
-    } catch (err) {
+  } else {
+    const cache = await caches.open(networkCacheName)
+    const cachedResponse = await cache.match(req)
+    
+    if (url.hostname === 'localhost') {
+      try {
+        const networkResponse = await fetch(req)
+        cacheRequest(req, networkResponse.clone())
+  
+        return networkResponse
+      } catch (err) {
+        if (cachedResponse) {
+          return cachedResponse
+        } else {
+          throw err
+        }
+      }
+    } else {
+      const networkFetch = fetch(req).then(networkResponse => {
+        cacheRequest(req, networkResponse.clone())
+  
+        return networkResponse
+      })
+  
       if (cachedResponse) {
         return cachedResponse
       } else {
-        throw err
+        return networkFetch
       }
-    }
-  } else {
-    const networkFetch = fetch(req).then(networkResponse => {
-      cache(req, networkResponse.clone())
-
-      return networkResponse
-    })
-
-    if (cachedResponse) {
-      return cachedResponse
-    } else {
-      return networkFetch
     }
   }
 }
 
-async function cache(req, res) {
-  const cache = await caches.open(cacheName)
+async function cacheRequest(req, res) {
+  const cache = await caches.open(networkCacheName)
   await cache.put(req, res)
 }

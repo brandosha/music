@@ -146,6 +146,16 @@
       }
     }
 
+    async createPlaylist(name, songs = []) {
+      const transaction = this.database.transaction(['playlists'], 'readwrite')
+      const playlistStore = transaction.objectStore('playlists')
+
+      const list = { name, songs }
+      await idbPromise(playlistStore.add(list))
+
+      this.playlists.push(list)
+      this._playlistMap[name] = list
+    }
     async removePlaylist(name) {
       const transaction = this.database.transaction(['playlists'], 'readwrite')
       const playlistStore = transaction.objectStore('playlists')

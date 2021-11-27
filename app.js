@@ -150,6 +150,13 @@ var app = new Vue({
         song.remove()
       }
     },
+
+    createPlaylist() {
+      const name = prompt("Enter a name for the new playlist:")
+      if (name) {
+        db.createPlaylist(name)
+      }
+    },
     addSelectedToPlaylist() {
       const song = this.playlist.adding
       if (Array.isArray(this.playlist.adding)) {

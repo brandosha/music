@@ -1,4 +1,4 @@
-const cacheName = 'music-v1'
+const cacheName = 'network v1 @music'
 
 self.addEventListener("fetch", event => {
   event.respondWith(
@@ -10,7 +10,27 @@ async function respond(req) {
   const url = new URL(req.url)
 
   let cachedResponse = await caches.match(req)
-  if (url.hostname === 'localhost') {
+  if (url.pathname.startsWith("/file-uploads/") && cachedResponse) {
+    const range = req.headers.get("Range")
+    if (range) {
+      const parts = range.split("=")
+      const start = parseInt(parts[1].split("-")[0])
+      const end = parseInt(parts[1].split("-")[1])
+
+      const file = await cachedResponse.blob()
+      const blob = file.slice(start, end + 1)
+      return new Response(blob, {
+        headers: {
+          "Content-Range": `bytes ${start}-${end}/${file.size}`,
+          "Content-Length": end - start + 1,
+          "Content-Type": file.type
+        },
+        status: 206
+      })
+    }
+
+    return cachedResponse
+  } else if (url.hostname === 'localhost') {
     try {
       const networkResponse = await fetch(req)
       cache(req, networkResponse.clone())

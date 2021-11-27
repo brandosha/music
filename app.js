@@ -56,7 +56,8 @@ var app = new Vue({
         }
       }
 
-      const player = new Audio()
+      const player = new Audio(song.fileUrl())
+      player.preload = "metadata"
 
       const queueObj = { song, player }
       if (front) {
@@ -66,26 +67,10 @@ var app = new Vue({
       }
 
       if (!this.currentSong) {
-        player.play()
-      }
-
-      if (!this.currentSong) {
-        await this.preloadNext()
         this.playNext()
       }
 
-      if (this.queue.length === 1 || front) {
-        this.preloadNext()
-      }
-
       player.onended = () => this.playNext()
-    },
-    async preloadNext() {
-      if (this.queue.length > 0) {
-        const next = this.queue[0]
-        const file = await next.song.getFile()
-        next.player.src = srcUrl(file)
-      }
     },
     playNext() {
       const next = this.queue.shift()
@@ -98,8 +83,6 @@ var app = new Vue({
         if (this.willLoop) {
           this.queue.push(next)
         }
-
-        this.preloadNext()
       } else {
         this.player = null
         this.currentSong = null
@@ -108,9 +91,9 @@ var app = new Vue({
     },
     skip() {
       if (this.player) {
-        this.player.currentTime = this.player.duration - 0.0001
-        this.player.play()
+        this.player.pause()
       }
+      this.playNext()
     },
     seek() {
       const progress = this.songProgress
@@ -401,17 +384,6 @@ db.ready.then(() => {
 
   app.nav = JSON.parse(localStorage.getItem("music-nav")) || app.nav
 })
-
-const srcCache = new Map()
-function srcUrl(file) {
-  if (srcCache.has(file)) {
-    return srcCache.get(file)
-  } else {
-    const url = URL.createObjectURL(file)
-    srcCache.set(file, url)
-    return url
-  }
-}
 
 // https://stackoverflow.com/a/2450976
 function shuffle(array) {

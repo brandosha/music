@@ -12,19 +12,22 @@
     }
 
     async init() {
-      const openRequest = indexedDB.open('music-db', 3)
+      const openRequest = indexedDB.open('music-db', 4)
       openRequest.onupgradeneeded = (event) => {
         const db = openRequest.result
 
-        try {
-          db.deleteObjectStore('files')
-          db.deleteObjectStore('songs')
-          db.deleteObjectStore('playlists')
+        const deleteStore = (name) => {
+          try {
+            db.deleteObjectStore(name)
+          } catch (error) {
+            // Ignore
+          }
+        }
 
-          db.deleteObjectStore('titles')
-        } catch (error) { }
-
-        const fileStore = db.createObjectStore('files', { autoIncrement: true })
+        deleteStore('files')
+        deleteStore('songs')
+        deleteStore('playlists')
+        deleteStore('titles')
 
         const songStore = db.createObjectStore('songs', { keyPath: 'id' })
         songStore.createIndex('title', 'title', { unique: false })
@@ -45,6 +48,7 @@
       const artistMap = { }
       const artists = this.artists = []
       
+      this.lastKey = 0
       const songMap = { }
       this.songs = songs.map(obj => {
         const song = new Song(obj.id, obj)
@@ -78,6 +82,9 @@
         }
 
         album.songs.push(song)
+        if (song.id > this.lastKey) {
+          this.lastKey = song.id
+        }
 
         return song
       })
@@ -108,26 +115,27 @@
     }
 
     async add(file) {
-      const transaction = this.database.transaction(['files', 'songs'], 'readwrite')
-      const fileStore = transaction.objectStore('files')
-
-      const key = await idbPromise(fileStore.put(file))
+      const key = this.lastKey = this.lastKey + 1
 
       const title = file.name.replace(/\.[^/.]+$/, '')
       const song = new Song(key, { title })
       song.file = file
       await song.updateInStore()
 
+      await caches.open("files v1 @music").then(cache => {
+        const req = new Request(`file-uploads/${key}`)
+        const res = new Response(file, { headers: { 'Content-Type': file.type } })
+        cache.put(req, res)
+      })
+
       this.songs.push(song)
       return song
     }
 
     async removeSong(id) {
-      const transaction = this.database.transaction(['files', 'songs'], 'readwrite')
-      const fileStore = transaction.objectStore('files')
+      const transaction = this.database.transaction(['songs'], 'readwrite')
       const songStore = transaction.objectStore('songs')
 
-      await idbPromise(fileStore.delete(id))
       await idbPromise(songStore.delete(id))
 
       for (let i = 0; i < this.songs.length; i++) {
@@ -150,12 +158,12 @@
     }
 
     async clear() {
-      const transaction = this.database.transaction(['files', 'songs'], 'readwrite')
-      const fileStore = transaction.objectStore('files')
+      const transaction = this.database.transaction(['songs', 'playlists'], 'readwrite')
       const songStore = transaction.objectStore('songs')
+      const playlistStore = transaction.objectStore('playlists')
 
-      await idbPromise(fileStore.clear())
       await idbPromise(songStore.clear())
+      await idbPromise(playlistStore.clear())
 
       this.songs.splice(0, this.songs.length)
     }
@@ -172,46 +180,49 @@
       if (!id || !data) return null
 
       this.id = id
+      this.playlists = []
 
       this.title = data.title || "unknown"
       this.artist = data.artist || "unknown"
       this.album = data.album || "unknown"
 
-      this.playlists = []
+      if (db._artistMap) {
+        this.setArtist(data.artist || "unknown", true)
+        this.setAlbum(data.album || "unknown", true)
+      }
 
       existingSongs[id] = this
     }
 
-    getFile() {
-      if (this.file) return this.file
-      if (this._filePromise) return this._filePromise
-
-      const transaction = db.database.transaction(['files'], 'readonly')
-      const fileStore = transaction.objectStore('files')
-
-      this._filePromise = idbPromise(fileStore.get(this.id))
-      this._filePromise.then(file => this.file = file)
-      return this._filePromise
+    fileUrl() {
+      return "file-uploads/" + this.id
     }
 
-    async setArtist(name) {
-      if (name == this.artist) return
-      console.log(this, "setArtist", name)
+    async setArtist(name, force = false) {
+      if (!force && name == this.artist) return
 
-      let previousArtist = db._artistMap[this.artist]
-      previousArtist.songs.splice(previousArtist.songs.indexOf(this), 1)
+      try {
+        let previousArtist = db._artistMap[this.artist]
+        const artistSongIndex = previousArtist.songs.indexOf(this)
+        if (artistSongIndex > -1) {
+          previousArtist.songs.splice(artistSongIndex, 1)
+        }
 
-      let previousAlbum = previousArtist.albumMap[this.album]
-      previousAlbum.songs.splice(previousAlbum.songs.indexOf(this), 1)
+        let previousAlbum = previousArtist.albumMap[this.album]
+        const albumSongIndex = previousAlbum.songs.indexOf(this)
+        if (albumSongIndex > -1) {
+          previousAlbum.songs.splice(albumSongIndex, 1)
+        }
 
-      if (previousAlbum.songs.length === 0) {
-        previousArtist.albums.splice(previousArtist.albums.indexOf(previousAlbum), 1)
-        previousArtist.albumMap[this.album] = undefined
-      }
-      if (previousArtist.songs.length === 0) {
-        db.artists.splice(db.artists.indexOf(previousArtist), 1)
-        db._artistMap[this.artist] = undefined
-      }
+        if (previousAlbum.songs.length === 0) {
+          previousArtist.albums.splice(previousArtist.albums.indexOf(previousAlbum), 1)
+          previousArtist.albumMap[this.album] = undefined
+        }
+        if (previousArtist.songs.length === 0) {
+          db.artists.splice(db.artists.indexOf(previousArtist), 1)
+          db._artistMap[this.artist] = undefined
+        }
+      } catch (err) { }
 
       let artist = db._artistMap[name]
       if (!artist) {
@@ -243,19 +254,24 @@
       this.artist = name
     }
 
-    async setAlbum(name) {
-      if (name == this.album) return
-      console.log(this, "setAlbum", name)
+    async setAlbum(name, force = false) {
+      if (!force && name == this.album) return
 
       const artist = db._artistMap[this.artist]
 
-      let previousAlbum = artist.albumMap[this.album]
-      previousAlbum.songs.splice(previousAlbum.songs.indexOf(this), 1)
+      try {
+        let previousAlbum = artist.albumMap[this.album]
+        const index = previousAlbum.songs.indexOf(this)
+        if (index > -1) {
+          previousAlbum.songs.splice(index, 1)
+        }
 
-      if (previousAlbum.songs.length === 0) {
-        artist.albums.splice(artist.albums.indexOf(previousAlbum), 1)
-        artist.albumMap[this.album] = undefined
-      }
+        if (previousAlbum.songs.length === 0) {
+          artist.albums.splice(artist.albums.indexOf(previousAlbum), 1)
+          artist.albumMap[this.album] = undefined
+        }
+      } catch (err) { }
+      
       
       let album = artist.albumMap[name]
       if (!album) {

@@ -17,6 +17,8 @@ var app = new Vue({
     willShuffle: false,
     willLoop: false,
 
+    optionsSong: null,
+
     playlist: {
       adding: null,
       name: ""
@@ -40,6 +42,8 @@ var app = new Vue({
   },
   methods: {
     async addToQueue(song, front = false, skip = false) {
+      this.optionsSong = null
+
       const alert = this.alert
       if (!alert.ignore && this.currentSong) {
         alert.song = song
@@ -206,6 +210,14 @@ var app = new Vue({
       if (confirm(`Are you sure you want to delete the playlist '${this.currentPage}'?`)) {
         db.removePlaylist(this.currentPage)
         this.nav = ["~Library"]
+      }
+    },
+
+    toggleOptions(song) {
+      if (this.optionsSong === song) {
+        this.optionsSong = null
+      } else {
+        this.optionsSong = song
       }
     },
 
@@ -388,6 +400,7 @@ var app = new Vue({
     },
     nav(nav) {
       app.search = ""
+      app.optionsSong = null
       localStorage.setItem("music-nav", JSON.stringify(nav))
     },
 

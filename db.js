@@ -142,6 +142,11 @@
 
       await idbPromise(songStore.delete(id))
 
+      await caches.open("files v1 @music").then(cache => {
+        const req = new Request(`file-uploads/${key}`)
+        cache.delete(req)
+      })
+
       for (let i = 0; i < this.songs.length; i++) {
         if (this.songs[i].id === id) {
           this.songs.splice(i, 1)

@@ -193,8 +193,8 @@
               </div>
             </div>
 
-            <div v-for="song in filteredSongs" class="border-bottom">
-              <div @click="toggleOptions(song)" class="d-flex justify-content-between align-items-center p-2">
+            <div v-for="(song, i) in filteredSongs" class="border-bottom">
+              <div @click="toggleOptions(song, i)" class="d-flex justify-content-between align-items-center p-2">
                 <div class="text-truncate">
                   {{ song.title }}
                 </div>
@@ -206,7 +206,7 @@
                 </div>
               </div>
               
-              <div class="d-flex justify-content-end song-options px-2" :class="{ show: optionsSong === song }">
+              <div class="d-flex justify-content-end song-options px-2" :class="{ show: options.song === song && options.i === i }">
                 <div class="me-auto">
                   <button @click="remove(song)" class="playback-button text-danger">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">

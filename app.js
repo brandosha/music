@@ -17,7 +17,10 @@ var app = new Vue({
     willShuffle: false,
     willLoop: false,
 
-    optionsSong: null,
+    options: {
+      song: null,
+      i: null
+    },
 
     playlist: {
       adding: null,
@@ -42,7 +45,8 @@ var app = new Vue({
   },
   methods: {
     async addToQueue(song, front = false, skip = false) {
-      this.optionsSong = null
+      this.options.song = null
+      this.options.i = null
 
       const alert = this.alert
       if (!alert.ignore && this.currentSong) {
@@ -213,11 +217,15 @@ var app = new Vue({
       }
     },
 
-    toggleOptions(song) {
-      if (this.optionsSong === song) {
-        this.optionsSong = null
+    toggleOptions(song, i) {
+      const options = this.options
+
+      if (options.song === song && options.i === i) {
+        options.song = null
+        options.i = null
       } else {
-        this.optionsSong = song
+        options.song = song
+        options.i = i
       }
     },
 
@@ -404,8 +412,16 @@ var app = new Vue({
     },
     nav(nav) {
       app.search = ""
-      app.optionsSong = null
+
+      app.options.song = null
+      app.options.i = null
+
       localStorage.setItem("music-nav", JSON.stringify(nav))
+    },
+
+    search() {
+      this.options.song = null
+      this.options.i = null
     },
 
     alert: {

@@ -27,11 +27,28 @@ var app = new Vue({
       artist: "",
       album: ""
     },
+    alert: {
+      show: false,
+      song: null,
+      duration: 2000,
+      timeout: null,
+      ignore: false,
+      updateCounter: 0
+    },
 
     player: null
   },
   methods: {
-    async addToQueue(song, front = false) {
+    async addToQueue(song, front = false, skip = false) {
+      const alert = this.alert
+      if (!alert.ignore && this.currentSong) {
+        alert.song = song
+        alert.show = true
+        alert.type = front ? "next" : "later"
+
+        alert.updateCounter += 1
+      }
+
       if (Array.isArray(song)) {
         let songs = song.slice()
 
@@ -48,9 +65,11 @@ var app = new Vue({
             }
           }
 
+          alert.ignore = true
           for (const song of songs) {
             await this.addToQueue(song, front)
           }
+          alert.ignore = false
 
           return
         }
@@ -72,6 +91,17 @@ var app = new Vue({
 
       player.onended = () => this.playNext()
     },
+    async playNow(song) {
+      const alert = this.alert
+      const playingNow = this.currentSong
+
+      alert.ignore = true
+      await this.addToQueue(song, true)
+      alert.ignore = false
+
+      if (playingNow) this.skip()
+    },
+
     playNext() {
       const next = this.queue.shift()
 
@@ -115,7 +145,10 @@ var app = new Vue({
 
       const promises = []
       for (let i = 0; i < files.length; i++) {
-        promises.push(db.add(files[i]))
+        const file = files[i]
+        if (file.type.includes("audio")) {
+          promises.push(db.add(files[i]))
+        }
       }
 
       if (this.nav[0].startsWith("playlist~")) {
@@ -356,6 +389,23 @@ var app = new Vue({
     nav(nav) {
       app.search = ""
       localStorage.setItem("music-nav", JSON.stringify(nav))
+    },
+
+    alert: {
+      deep: true,
+      handler() {
+        const alert = this.alert
+        if (!alert.show) return
+
+        if (alert.timeout !== null) {
+          clearTimeout(alert.timeout)
+        }
+
+        alert.timeout = setTimeout(() => {
+          alert.show = false
+          alert.timeout = null
+        }, alert.duration)
+      }
     }
   }
 })

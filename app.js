@@ -341,7 +341,11 @@ var app = new Vue({
         return songs
       } else {
         return songs.filter(song => {
-          return song.title.toLowerCase().includes(search)
+          return (
+            song.title.toLowerCase().includes(search) ||
+            (song.artist !== "unknown" && song.artist.toLowerCase().includes(search)) ||
+            (song.album !== "unknown" && song.album.toLowerCase().includes(search))
+          )
         })
       }
     },

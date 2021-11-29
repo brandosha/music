@@ -2,6 +2,7 @@ var app = new Vue({
   el: "#app",
   data: {
     view: "library",
+    showNowPlaying: false,
     nav: ["~All Songs", "~Library"],
 
     songs: [],
@@ -9,6 +10,7 @@ var app = new Vue({
     playlists: [],
     
     queue: [],
+    queueIndex: 0,
     currentSong: null,
     songProgress: 0,
     paused: false,
@@ -44,7 +46,7 @@ var app = new Vue({
     player: null
   },
   methods: {
-    async addToQueue(song, front = false, skip = false) {
+    async addToQueue(song, next = false, skip = false) {
       this.options.song = null
       this.options.i = null
 
@@ -52,7 +54,7 @@ var app = new Vue({
       if (!alert.ignore && this.currentSong) {
         alert.song = song
         alert.show = true
-        alert.type = front ? "next" : "later"
+        alert.type = next ? "next" : "later"
 
         alert.updateCounter += 1
       }
@@ -66,7 +68,7 @@ var app = new Vue({
           if (this.willShuffle) {
             shuffle(songs)
           }
-          if (front) {
+          if (next) {
             songs = songs.reverse()
             if (!this.currentSong) {
               songs.unshift(songs.pop())
@@ -75,7 +77,7 @@ var app = new Vue({
 
           alert.ignore = true
           for (const song of songs) {
-            await this.addToQueue(song, front)
+            await this.addToQueue(song, next)
           }
           alert.ignore = false
 
@@ -87,8 +89,8 @@ var app = new Vue({
       player.preload = "metadata"
 
       const queueObj = { song, player }
-      if (front) {
-        this.queue.unshift(queueObj)
+      if (next) {
+        this.queue.splice(this.queueIndex + 1, 0, queueObj)
       } else {
         this.queue.push(queueObj)
       }
@@ -111,21 +113,15 @@ var app = new Vue({
     },
 
     playNext() {
-      const next = this.queue.shift()
-
-      if (next) {
-        this.player = next.player
-        next.player.play()
-        
-        this.currentSong = next.song
-        if (this.willLoop) {
-          this.queue.push(next)
-        }
-      } else {
-        this.player = null
-        this.currentSong = null
-        this.songProgress = 0
+      let nextIndex = 0
+      if (this.currentSong) {
+        nextIndex = this.queueIndex + 1
       }
+      if (this.willLoop && nextIndex >= this.queue.length) {
+        nextIndex = 0
+      }
+
+      this.playAtIndex(nextIndex)
     },
     skip() {
       if (this.player) {
@@ -133,6 +129,39 @@ var app = new Vue({
       }
       this.playNext()
     },
+    playAtIndex(index) {
+      const item = this.queue[index]
+
+      if (this.player) {
+        this.player.pause()
+      }
+
+      if (item) {
+        item.player.currentTime = 0
+
+        this.player = item.player
+        item.player.play()
+        
+        this.queueIndex = index
+        this.currentSong = item.song
+      } else {
+        this.player = null
+        this.currentSong = null
+        this.songProgress = 0
+      }
+    },
+    shuffleQueue() {
+      const queue = this.queue
+      shuffle(queue)
+
+      for (let i = 0; i < queue.length; i++) {
+        if (queue[i].song === this.currentSong) {
+          this.queueIndex = i
+          break
+        }
+      }
+    },
+
     seek() {
       const progress = this.songProgress
       if (this.player) {
@@ -319,8 +348,7 @@ var app = new Vue({
       const minutes = Math.floor(seconds / 60)
       const secondsLeft = seconds % 60
       return `${minutes}:${secondsLeft < 10 ? "0" : ""}${secondsLeft}`
-    },
-    shuffle
+    }
   },
   computed: {
     filteredSongs() {
@@ -402,12 +430,21 @@ var app = new Vue({
         songs.sort((a, b) => a.title.localeCompare(b.title))
       }
     },
-    willLoop() {
-      const lastSong = this.queue[this.queue.length - 1]
-      if (this.willLoop && this.currentSong && (!lastSong || lastSong.song !== this.currentSong)) {
-        this.addToQueue(this.currentSong)
-      } else if (!this.willLoop && lastSong && lastSong.song === this.currentSong) {
-        this.queue.pop()
+    artists() {
+      const artists = this.artists
+
+      let outOfOrder = false
+      for (let i = 1; i < artists.length; i++) {
+        const a = artists[i - 1].name
+        const b = artists[i].name
+
+        if (a.localeCompare(b) === 1) {
+          outOfOrder = true
+          break
+        }
+      }
+      if (outOfOrder) {
+        artists.sort((a, b) => a.name.localeCompare(b.name))
       }
     },
     nav(nav) {
@@ -424,21 +461,20 @@ var app = new Vue({
       this.options.i = null
     },
 
-    alert: {
-      deep: true,
-      handler() {
-        const alert = this.alert
-        if (!alert.show) return
+    "alert.updateCounter": function() {
+      const alert = this.alert
+      console.log(alert.show && alert.song)
 
-        if (alert.timeout !== null) {
-          clearTimeout(alert.timeout)
-        }
+      if (!alert.show) return
 
-        alert.timeout = setTimeout(() => {
-          alert.show = false
-          alert.timeout = null
-        }, alert.duration)
+      if (alert.timeout !== null) {
+        clearTimeout(alert.timeout)
       }
+
+      alert.timeout = setTimeout(() => {
+        alert.show = false
+        alert.timeout = null
+      }, alert.duration)
     }
   }
 })

@@ -31,13 +31,29 @@
   position: fixed;
   top: 0;
 
-  transition: opacity ease-out 0.5s, visibility 0.5s;
+  transition: all ease-in-out 0.5s;
 }
-.action-alert:not(.show) {
-  visibility: hidden;
+.action-alert-enter, .action-alert-leave-to {
+  top: -100%;
   opacity: 0;
 }
 
-.border-bottom {
-  border-bottom: 1px solid #88888840!important; /* override Bootstrap */
+.queue {
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+
+  position: fixed;
+  top: 0;
 }
+.queue-enter-active {
+  transition: top 0.5s ease-in-out;
+}
+.queue-leave-active {
+  transition: top 0.5s ease-in;
+}
+.queue-enter, .queue-leave-to {
+  top: 100%;
+}
+
+.border-bottom { border-bottom: 1px solid #88888840!important; }

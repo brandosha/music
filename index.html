@@ -23,7 +23,7 @@
 
           <div class="d-flex align-items-center mt-2">
             <div style="width: 33.33%;">
-              <button v-if="previousPage" @click="nav.shift()" class="btn btn-link text-decoration-none d-flex align-items-center p-0">
+              <button v-if="previousPage" @click="nav.shift()" class="btn btn-link text-decoration-none d-flex align-items-center p-0 mw-100">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16">
                   <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
                 </svg>
@@ -114,34 +114,6 @@
             </div>
           </div>
         </div>
-        
-        <div v-if="view === 'queue'" class="d-flex">
-          <div class="ms-2">
-            <button @click="queue = []" class="playback-button text-danger">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square-fill" viewBox="0 0 16 16">
-                <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm3.354 4.646L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 1 1 .708-.708z"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="ms-auto">
-            <button @click="shuffle(queue)" class="playback-button">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-shuffle" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H1c2.202 0 3.827 1.24 4.874 2.418.49.552.865 1.102 1.126 1.532.26-.43.636-.98 1.126-1.532C9.173 4.24 10.798 3 13 3v1c-1.798 0-3.173 1.01-4.126 2.082A9.624 9.624 0 0 0 7.556 8a9.624 9.624 0 0 0 1.317 1.918C9.828 10.99 11.204 12 13 12v1c-2.202 0-3.827-1.24-4.874-2.418A10.595 10.595 0 0 1 7 9.05c-.26.43-.636.98-1.126 1.532C4.827 11.76 3.202 13 1 13H.5a.5.5 0 0 1 0-1H1c1.798 0 3.173-1.01 4.126-2.082A9.624 9.624 0 0 0 6.444 8a9.624 9.624 0 0 0-1.317-1.918C4.172 5.01 2.796 4 1 4H.5a.5.5 0 0 1-.5-.5z"/>
-                <path d="M13 5.466V1.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192zm0 9v-3.932a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192z"/>
-              </svg>
-            </button>
-          </div>
-          
-          <div class="ms-2">
-            <button @click="willLoop = !willLoop" class="playback-button" :class="{ 'bg-primary text-white': willLoop }">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16">
-                <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
-                <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
-              </svg>
-            </button>
-          </div>
-        </div>
       </div>
 
       <div class="flex-shrink-1 scroll-y h-100">
@@ -194,12 +166,12 @@
             </div>
 
             <div v-for="(song, i) in filteredSongs" class="border-bottom">
-              <div @click="toggleOptions(song, i)" class="d-flex justify-content-between align-items-center p-2">
+              <div @click="toggleOptions(song, i)" class="d-flex justify-content-between align-items-center py-2 px-3">
                 <div class="text-truncate">
                   {{ song.title }}
                 </div>
 
-                <div class="btn btn-link">
+                <div class="btn btn-link p-0">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
                   </svg>
@@ -267,98 +239,157 @@
             </div>
           </div>
         </div>
-        <div v-else-if="view === 'queue'">
-          <div v-for="(obj, i) in queue">
-            <div class="d-flex align-items-center justify-content-between p-2 border-bottom">
-              <div class="text-truncate">
-                {{ obj.song.title }}
-              </div>
 
-              <button @click="queue.splice(i, 1)" class="btn btn-lg text-danger">
-                &times;
-              </button>
+        <transition name="action-alert">
+          <div v-if="alert.song && alert.show" class="action-alert p-3 pb-0 w-100">
+            <div class="alert alert-success m-0 px-3 py-2">
+              Playing
+              <span v-if="alert.song.pop"> <!-- alert.song is an array -->
+                {{ alert.song.length }} Songs
+              </span>
+              <span v-else>
+                '{{ alert.song.title }}'
+              </span>
+              {{ alert.type }}
             </div>
           </div>
-
-          <div v-if="queue.length === 0" class="d-flex h-100 align-items-center justify-content-center p-4">
-            <div>
-              Nothing in Up Next.
-              <br>
-              <button @click="view = 'library'" class="btn btn-link">
-                Go to Library
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="alert.song" class="position-fixed top-0 p-3 pb-0 w-100 action-alert" :class="{ show: alert.show }">
-          <div class="alert alert-success m-0 px-3 py-2">
-            Playing
-            <span v-if="alert.song.pop"> <!-- alert.song is an array -->
-              {{ alert.song.length }} Songs
-            </span>
-            <span v-else>
-              '{{ alert.song.title }}'
-            </span>
-            {{ alert.type }}
-          </div>
-        </div>
+        </transition>
       </div>
 
+      <transition name="queue">
+        <div v-if="showNowPlaying" class="queue bg-body">
+          <div class="d-flex flex-column justify-content-between h-100 p-3 pt-0" style="background-color: #88888820;">
+            <div class="d-flex justify-content-end">
+              <button @click="showNowPlaying = false" class="btn btn-link w-100 pb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                </svg>
+              </button>
+            </div>
+  
+            <div v-if="queue.length > 0" class="d-flex flex-column mb-4" style="min-height: 0;">
+              <div class="d-flex p-2">
+                <div class="fw-bold">
+                  Up Next
+                </div>
+  
+                <div class="ms-auto">
+                  <button @click="shuffleQueue" class="playback-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-shuffle" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H1c2.202 0 3.827 1.24 4.874 2.418.49.552.865 1.102 1.126 1.532.26-.43.636-.98 1.126-1.532C9.173 4.24 10.798 3 13 3v1c-1.798 0-3.173 1.01-4.126 2.082A9.624 9.624 0 0 0 7.556 8a9.624 9.624 0 0 0 1.317 1.918C9.828 10.99 11.204 12 13 12v1c-2.202 0-3.827-1.24-4.874-2.418A10.595 10.595 0 0 1 7 9.05c-.26.43-.636.98-1.126 1.532C4.827 11.76 3.202 13 1 13H.5a.5.5 0 0 1 0-1H1c1.798 0 3.173-1.01 4.126-2.082A9.624 9.624 0 0 0 6.444 8a9.624 9.624 0 0 0-1.317-1.918C4.172 5.01 2.796 4 1 4H.5a.5.5 0 0 1-.5-.5z"/>
+                      <path d="M13 5.466V1.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192zm0 9v-3.932a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192z"/>
+                    </svg>
+                  </button>
+                </div>
+                
+                <div class="ms-2">
+                  <button @click="willLoop = !willLoop" class="playback-button" :class="{ 'bg-primary text-white': willLoop }">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16">
+                      <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+                      <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+                    </svg>
+                  </button>
+                </div>
+  
+                <button @click="queue = []" class="btn p-0 text-danger ms-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square-fill" viewBox="0 0 16 16">
+                    <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm3.354 4.646L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 1 1 .708-.708z"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="scroll-y">
+                <div v-for="(obj, i) in queue">
+                  <div class="d-flex align-items-center justify-content-between w-100 p-2 border-bottom">
+                    <div>
+                      <svg v-if="queueIndex === i" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+                        <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                      </svg>
+                      <svg v-else width="16" height="16"></svg>
+                    </div>
+                    
+                    <button @click="playAtIndex(i)" class="btn px-1 flex-grow-1 text-truncate" style="text-align: start;">
+                      {{ obj.song.title }}
+                    </button>
+      
+                    <button @click="queue.splice(i, 1)" class="btn btn-lg p-0 text-danger">
+                      &times;
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+  
+            <div v-if="currentSong">
+              <div class="mb-1 px-3">
+                {{ currentSong.title }}
+              </div>
+    
+              <div class="d-flex align-items-center justify-content-between">
+                <button @click="togglePlayback" class="btn" :disabled="!player">
+                  <svg v-if="!player || paused" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+                    <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16">
+                    <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+                  </svg>
+                </button>
+      
+                <div class="flex-grow-1 px-2">
+                  <input type="range" @input="seek" v-model="songProgress" :disabled="!player" class="form-range" min="0" max="1" step="0.0001">
+                </div>
+      
+                <div v-if="player" class="small opacity-75 px-2">
+                  {{ formatTime(player.currentTime) }}&nbsp;/&nbsp;{{ formatTime(player.duration) }}
+                </div>
+      
+                <button @click="skip" class="btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-skip-forward-fill" viewBox="0 0 16 16">
+                    <path d="M15.5 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V8.753l-6.267 3.636c-.54.313-1.233-.066-1.233-.697v-2.94l-6.267 3.636C.693 12.703 0 12.324 0 11.693V4.308c0-.63.693-1.01 1.233-.696L7.5 7.248v-2.94c0-.63.693-1.01 1.233-.696L15 7.248V4a.5.5 0 0 1 .5-.5z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+
       <div style="background-color: #88888820;" class="p-2 pb-0">
-        <div v-if="currentSong" class="text-truncate mb-1 px-3">
-          {{ currentSong.title }}
-        </div>
-
-        <div class="d-flex align-items-center justify-content-between">
-          <button @click="togglePlayback" class="btn" :disabled="!player">
-            <svg v-if="!player || paused" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
-              <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-            </svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16">
-              <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
-            </svg>
+        <div v-if="currentSong">
+          <button @click="showNowPlaying = true" class="btn d-flex justify-content-between w-100 px-3 py-0 mb-1">
+            <div class="text-truncate">
+              {{ currentSong.title }}
+            </div>
+            <div class="btn btn-link pe-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-up" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z"/>
+              </svg>
+            </div>
           </button>
 
-          <div class="flex-grow-1 px-2">
-            <input type="range" @input="seek" v-model="songProgress" :disabled="!player" class="form-range" min="0" max="1" step="0.0001">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <button @click="togglePlayback" class="btn" :disabled="!player">
+              <svg v-if="!player || paused" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+              </svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16">
+                <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+              </svg>
+            </button>
+  
+            <div class="flex-grow-1 px-2">
+              <input type="range" @input="seek" v-model="songProgress" :disabled="!player" class="form-range" min="0" max="1" step="0.0001">
+            </div>
+  
+            <div v-if="player" class="small opacity-75 px-2">
+              {{ formatTime(player.currentTime) }}&nbsp;/&nbsp;{{ formatTime(player.duration) }}
+            </div>
+  
+            <button @click="skip" class="btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-skip-forward-fill" viewBox="0 0 16 16">
+                <path d="M15.5 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V8.753l-6.267 3.636c-.54.313-1.233-.066-1.233-.697v-2.94l-6.267 3.636C.693 12.703 0 12.324 0 11.693V4.308c0-.63.693-1.01 1.233-.696L7.5 7.248v-2.94c0-.63.693-1.01 1.233-.696L15 7.248V4a.5.5 0 0 1 .5-.5z"/>
+              </svg>
+            </button>
           </div>
-
-          <div v-if="player" class="small opacity-75 px-2">
-            {{ formatTime(player.currentTime) }}&nbsp;/&nbsp;{{ formatTime(player.duration) }}
-          </div>
-
-          <button @click="skip" class="btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-skip-forward-fill" viewBox="0 0 16 16">
-              <path d="M15.5 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V8.753l-6.267 3.636c-.54.313-1.233-.066-1.233-.697v-2.94l-6.267 3.636C.693 12.703 0 12.324 0 11.693V4.308c0-.63.693-1.01 1.233-.696L7.5 7.248v-2.94c0-.63.693-1.01 1.233-.696L15 7.248V4a.5.5 0 0 1 .5-.5z"/>
-            </svg>
-          </button>
-        </div>
-
-        <div class="d-flex justify-content-around">
-          <button @click="view = 'library'" class="btn btn-sm" :class="{ 'text-primary' : view == 'library' }">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-music-note-list" viewBox="0 0 16 16">
-              <path d="M12 13c0 1.105-1.12 2-2.5 2S7 14.105 7 13s1.12-2 2.5-2 2.5.895 2.5 2z"/>
-              <path fill-rule="evenodd" d="M12 3v10h-1V3h1z"/>
-              <path d="M11 2.82a1 1 0 0 1 .804-.98l3-.6A1 1 0 0 1 16 2.22V4l-5 1V2.82z"/>
-              <path fill-rule="evenodd" d="M0 11.5a.5.5 0 0 1 .5-.5H4a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5zm0-4A.5.5 0 0 1 .5 7H8a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5zm0-4A.5.5 0 0 1 .5 3H8a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5z"/>
-            </svg>
-
-            <br>
-            <small>
-              Library
-            </small>
-          </button>
-          <button @click="view = 'queue'" class="btn btn-sm" :class="{ 'text-primary' : view == 'queue' }">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-collection-play-fill" viewBox="0 0 16 16">
-              <path d="M2.5 3.5a.5.5 0 0 1 0-1h11a.5.5 0 0 1 0 1h-11zm2-2a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1h-7zM0 13a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 16 13V6a1.5 1.5 0 0 0-1.5-1.5h-13A1.5 1.5 0 0 0 0 6v7zm6.258-6.437a.5.5 0 0 1 .507.013l4 2.5a.5.5 0 0 1 0 .848l-4 2.5A.5.5 0 0 1 6 12V7a.5.5 0 0 1 .258-.437z"/>
-            </svg>
-
-            <br>
-            <small>
-              Up Next
-            </small>
-          </button>
         </div>
       </div>
     </div>

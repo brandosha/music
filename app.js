@@ -24,6 +24,9 @@ var app = new Vue({
       i: null
     },
 
+    playlistEditor: {
+      name: null
+    },
     playlist: {
       adding: null,
       name: ""
@@ -37,7 +40,7 @@ var app = new Vue({
     alert: {
       show: false,
       song: null,
-      duration: 2000,
+      duration: 2500,
       timeout: null,
       ignore: false,
       updateCounter: 0
@@ -46,7 +49,7 @@ var app = new Vue({
     player: null
   },
   methods: {
-    async addToQueue(song, next = false, skip = false) {
+    async addToQueue(song, next = false) {
       this.options.song = null
       this.options.i = null
 
@@ -151,14 +154,33 @@ var app = new Vue({
       }
     },
     shuffleQueue() {
+      const i = this.queueIndex
       const queue = this.queue
-      shuffle(queue)
+      const current = queue[i]
 
-      for (let i = 0; i < queue.length; i++) {
-        if (queue[i].song === this.currentSong) {
-          this.queueIndex = i
-          break
-        }
+      queue.splice(i, 1)
+      shuffle(queue)
+      queue.unshift(current)
+
+      this.queueIndex = 0
+    },
+    removeFromQueue(i) {
+      this.queue.splice(i, 1)
+      if (i < this.queueIndex) {
+        this.queueIndex -= 1
+      }
+    },
+    clearQueue() {
+      if (this.currentSong) {
+        this.queue = [{
+          song: this.currentSong,
+          player: this.player
+        }]
+
+        this.queueIndex = 0
+      } else {
+        this.queue = []
+        this.queueIndex = -1
       }
     },
 
@@ -243,6 +265,28 @@ var app = new Vue({
       if (confirm(`Are you sure you want to delete the playlist '${this.currentPage}'?`)) {
         db.removePlaylist(this.currentPage)
         this.nav = ["~Library"]
+      }
+    },
+    renamePlaylist() {
+      const oldName = this.currentPage
+      const name = this.playlistEditor.name.trim()
+
+      if (db._playlistMap[name]) {
+        alert(`A playlist with the name '${name}' already exists`)
+      } else {
+        const playlist = db._playlistMap[oldName]
+        playlist.name = name
+        playlist.songs.forEach(song => {
+          song.playlists.delete(oldName)
+          song.playlists.set(name, playlist)
+        })
+
+        db._playlistMap[name] = playlist
+        db._playlistMap[oldName] = undefined
+
+        Vue.set(this.nav, 0, "playlist~" + name)
+
+        this.playlistEditor.name = null
       }
     },
 
@@ -361,14 +405,19 @@ var app = new Vue({
         } else if (this.nav[0].startsWith("artist~")) {
           const name = this.currentPage
           songs = db._artistMap[name].songs
-        } else if (this.nav[0].startsWith("album")) {
-          const artist = this.nav[0].split("@")[1].split("~")[0]
+        } else if (this.nav[0].startsWith("album~")) {
+          const artist = this.previousPage
           const album = this.currentPage
   
           songs = db._artistMap[artist].albumMap[album].songs
         }
       } catch (err) {
-        this.nav.shift()
+        if (this.nav.length > 1) {
+          this.nav.shift()
+        } else {
+          this.nav = ["~Library"]
+        }
+        
         return this.filteredSongs
       }
 
@@ -413,8 +462,8 @@ var app = new Vue({
         document.title = "Not Playing"
       }
     },
-    songs() {
-      const songs = this.songs
+    songs(songs) {
+      if (!songs) return
 
       let outOfOrder = false
       for (let i = 1; i < songs.length; i++) {
@@ -430,8 +479,8 @@ var app = new Vue({
         songs.sort((a, b) => a.title.localeCompare(b.title))
       }
     },
-    artists() {
-      const artists = this.artists
+    artists(artists) {
+      if (!artists) return
 
       let outOfOrder = false
       for (let i = 1; i < artists.length; i++) {
@@ -463,7 +512,6 @@ var app = new Vue({
 
     "alert.updateCounter": function() {
       const alert = this.alert
-      console.log(alert.show && alert.song)
 
       if (!alert.show) return
 
@@ -475,6 +523,10 @@ var app = new Vue({
         alert.show = false
         alert.timeout = null
       }, alert.duration)
+    },
+
+    "playlistEditor.playlist": function(name) {
+      this.playlistEditor.name = name
     }
   }
 })
@@ -487,6 +539,20 @@ Vue.component("nav-button", {
       app.nav.unshift(this.page)
     }
   }
+})
+
+Vue.component("song-row", {
+  props: ["song", "i"],
+  data() {
+    const shared = ["nav", "options", "toggleOptions", "addToQueue", "playNow", "beginEditing", "playlist", "currentPage"]
+    const data = {}
+    shared.forEach(key => {
+      data[key] = app[key]
+    })
+
+    return data
+  },
+  template: document.getElementById("song-row").innerHTML
 })
 
 setInterval(() => {
@@ -503,13 +569,13 @@ setInterval(() => {
   }
 }, 15)
 
-db.ready.then(() => {
+db.onready = () => {
   app.songs = db.songs
   app.artists = db.artists
   const playlists = app.playlists = db.playlists
 
   app.nav = JSON.parse(localStorage.getItem("music-nav")) || app.nav
-})
+}
 
 // https://stackoverflow.com/a/2450976
 function shuffle(array) {

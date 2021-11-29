@@ -8,12 +8,29 @@
 
   class Database {
     constructor() {
-      this.ready = this.init()
+      this.init()
+    }
+
+    /** @param { () => void } value */
+    set onready(value) {
+      /** @type { () => void } */
+      this._onready = value
+
+      if (this.database) {
+        this._onready()
+      }
     }
 
     async init() {
       const openRequest = indexedDB.open('music-db', 4)
       openRequest.onupgradeneeded = (event) => {
+        if (this.database) {
+          this.database.close()
+          setTimeout(() => {
+            this.init()
+          }, 100)
+        }
+
         const db = openRequest.result
 
         const deleteStore = (name) => {
@@ -37,8 +54,13 @@
         const playlistStore = db.createObjectStore('playlists', { keyPath: 'name' })
       }
 
-      /** @type { IDBDatabase } */
-      this.database = await idbPromise(openRequest)
+      try {
+        /** @type { IDBDatabase } */
+        this.database = await idbPromise(openRequest)
+      } catch (err) {
+        indexedDB.deleteDatabase()
+      }
+      
 
       const transaction = this.database.transaction(['songs', 'playlists'], 'readonly')
       const songStore = transaction.objectStore('songs')
@@ -103,7 +125,7 @@
 
           if (song) {
             list.songs.push(song)
-            song.playlists.add(list.name)
+            song.playlists.set(list.name, list)
           }
         })
 
@@ -112,6 +134,10 @@
         return list
       })
       this._playlistMap = playlistMap
+
+      if (this._onready) {
+        this._onready()
+      }
     }
 
     async add(file) {
@@ -164,6 +190,8 @@
 
       this.playlists.push(list)
       this._playlistMap[name] = list
+
+      return list
     }
     async removePlaylist(name) {
       const transaction = this.database.transaction(['playlists'], 'readwrite')
@@ -174,6 +202,25 @@
       const list = this._playlistMap[name]
       this.playlists.splice(this.playlists.indexOf(list), 1)
       this._playlistMap[name] = undefined
+    }
+    async renamePlaylist(oldName, newName) {
+      const playlist = db._playlistMap[oldName]
+      if (!playlist) return
+
+      playlist.name = newName
+      playlist.songs.forEach(song => {
+        song.playlists.delete(oldName)
+        song.playlists.set(name, playlist)
+      })
+
+      this._playlistMap[newName] = playlist
+      this._playlistMap[oldName] = undefined
+
+      const transaction = this.database.transaction(['playlists'], 'readwrite')
+      const playlistStore = transaction.objectStore('playlists')
+
+      playlistStore.delete(oldName)
+      playlistStore.put(playlist)
     }
 
     async clear() {
@@ -199,7 +246,7 @@
       if (!id || !data) return null
 
       this.id = id
-      this.playlists = new Set()
+      this.playlists = new Map()
 
       this.title = data.title || "unknown"
       this.artist = data.artist || "unknown"
@@ -352,7 +399,7 @@
         db._playlistMap[name] = newList
       }
 
-      this.playlists.add(name)
+      this.playlists.set(name, db._playlistMap[name])
     }
 
     async removeFromPlaylist(name) {

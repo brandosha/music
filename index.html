@@ -3,7 +3,6 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="apple-mobile-web-app-capable" content="yes">
 
   <title>Not Playing</title>
 
@@ -11,7 +10,7 @@
   <link rel="stylesheet" href="bootstrap-dark.css">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="overflow-hidden">
   <div id="app">
     <div class="d-flex flex-column h-100">
       <div class="p-2" style="background-color: #88888820;">
@@ -39,10 +38,10 @@
             </h5>
 
             <div class="d-flex justify-content-end" style="width: 33.33%;">
-              <button @click="removePlaylist" v-if="nav[0].startsWith('playlist~')" class="btn text-danger">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder-x" viewBox="0 0 16 16">
-                  <path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181L15.546 8H14.54l.265-2.91A1 1 0 0 0 13.81 4H2.19a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91H9v1H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zm6.339-1.577A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139C1.72 3.042 1.95 3 2.19 3h5.396l-.707-.707z"/>
-                  <path d="M11.854 10.146a.5.5 0 0 0-.707.708L12.293 12l-1.146 1.146a.5.5 0 0 0 .707.708L13 12.707l1.146 1.147a.5.5 0 0 0 .708-.708L13.707 12l1.147-1.146a.5.5 0 0 0-.707-.708L13 11.293l-1.146-1.147z"/>
+              <button @click="playlistEditor.name = currentPage" v-if="nav[0].startsWith('playlist~')" class="btn btn-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                  <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                  <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
                 </svg>
               </button>
             </div>
@@ -155,7 +154,7 @@
                 <div class="px-2 py-1 border-bottom opacity-75 small">
                   Albums
                 </div>
-                <nav-button v-for="album in artistsAlbums" :page="`album@${album.artist.name}~${album.name}`" :key="album.name">
+                <nav-button v-for="album in artistsAlbums" :page="`album~${album.name}`" :key="album.name">
                   {{ album.name }}
                 </nav-button>
               </div>
@@ -165,78 +164,7 @@
               </div>
             </div>
 
-            <div v-for="(song, i) in filteredSongs" class="border-bottom">
-              <div @click="toggleOptions(song, i)" class="d-flex justify-content-between align-items-center py-2 px-3">
-                <div class="text-truncate">
-                  {{ song.title }}
-                </div>
-
-                <div class="btn btn-link p-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
-                  </svg>
-                </div>
-              </div>
-              
-              <div class="d-flex justify-content-end song-options px-2" :class="{ show: options.song === song && options.i === i }">
-                <div class="me-auto">
-                  <button @click="remove(song)" class="playback-button text-danger">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
-                      <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
-                    </svg>
-                  </button>
-                </div>
-
-                <div class="ms-auto">
-                  <button @click="beginEditing(song)" class="playback-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
-                      <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                      <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
-                    </svg>
-                  </button>
-                </div>
-
-                <div v-if="nav[0].startsWith('playlist~')" class="ms-2">
-                  <button @click="song.removeFromPlaylist(currentPage)" class="playback-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder-minus" viewBox="0 0 16 16">
-                      <path d="m.5 3 .04.87a1.99 1.99 0 0 0-.342 1.311l.637 7A2 2 0 0 0 2.826 14H9v-1H2.826a1 1 0 0 1-.995-.91l-.637-7A1 1 0 0 1 2.19 4h11.62a1 1 0 0 1 .996 1.09L14.54 8h1.005l.256-2.819A2 2 0 0 0 13.81 3H9.828a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 6.172 1H2.5a2 2 0 0 0-2 2zm5.672-1a1 1 0 0 1 .707.293L7.586 3H2.19c-.24 0-.47.042-.683.12L1.5 2.98a1 1 0 0 1 1-.98h3.672z"/>
-                      <path d="M11 11.5a.5.5 0 0 1 .5-.5h4a.5.5 0 1 1 0 1h-4a.5.5 0 0 1-.5-.5z"/>
-                    </svg>
-                  </button>
-                </div>
-  
-                <div class="ms-2">
-                  <button @click="playlist.adding = song" class="playback-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder-plus" viewBox="0 0 16 16">
-                      <path d="m.5 3 .04.87a1.99 1.99 0 0 0-.342 1.311l.637 7A2 2 0 0 0 2.826 14H9v-1H2.826a1 1 0 0 1-.995-.91l-.637-7A1 1 0 0 1 2.19 4h11.62a1 1 0 0 1 .996 1.09L14.54 8h1.005l.256-2.819A2 2 0 0 0 13.81 3H9.828a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 6.172 1H2.5a2 2 0 0 0-2 2zm5.672-1a1 1 0 0 1 .707.293L7.586 3H2.19c-.24 0-.47.042-.683.12L1.5 2.98a1 1 0 0 1 1-.98h3.672z"/>
-                      <path d="M13.5 10a.5.5 0 0 1 .5.5V12h1.5a.5.5 0 1 1 0 1H14v1.5a.5.5 0 1 1-1 0V13h-1.5a.5.5 0 0 1 0-1H13v-1.5a.5.5 0 0 1 .5-.5z"/>
-                    </svg>
-                  </button>
-                </div>
-  
-                <div class="ms-auto">
-                  <button @click="playNow(song)" class="playback-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
-                      <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-                    </svg>
-                  </button>
-                </div>
-                <div class="ms-2">
-                  <button @click="addToQueue(song)" class="playback-button">
-                    <svg style="transform: scaleY(-1);" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-left" viewBox="0 0 16 16">
-                      <path fill-rule="evenodd" d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4z"/>
-                    </svg>
-                  </button>
-                </div>
-                <div class="ms-2">
-                  <button @click="addToQueue(song, true)" class="playback-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-left" viewBox="0 0 16 16">
-                      <path fill-rule="evenodd" d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4z"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
+            <song-row v-for="(song, i) in filteredSongs" :song="song" :i="i"></song-row>
           </div>
         </div>
 
@@ -257,7 +185,7 @@
       </div>
 
       <transition name="queue">
-        <div v-if="showNowPlaying" class="queue bg-body">
+        <div v-if="showNowPlaying" class="full-page-modal">
           <div class="d-flex flex-column justify-content-between h-100 p-3 pt-0" style="background-color: #88888820;">
             <div class="d-flex justify-content-end">
               <button @click="showNowPlaying = false" class="btn btn-link w-100 pb-3">
@@ -291,7 +219,7 @@
                   </button>
                 </div>
   
-                <button @click="queue = []" class="btn p-0 text-danger ms-3">
+                <button @click="clearQueue" class="btn p-0 text-danger ms-3">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square-fill" viewBox="0 0 16 16">
                     <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm3.354 4.646L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 1 1 .708-.708z"/>
                   </svg>
@@ -311,7 +239,7 @@
                       {{ obj.song.title }}
                     </button>
       
-                    <button @click="queue.splice(i, 1)" class="btn btn-lg p-0 text-danger">
+                    <button @click="removeFromQueue(i)" class="btn btn-lg p-0 text-danger" :disabled="queueIndex === i">
                       &times;
                     </button>
                   </div>
@@ -319,9 +247,9 @@
               </div>
             </div>
   
-            <div v-if="currentSong">
-              <div class="mb-1 px-3">
-                {{ currentSong.title }}
+            <div>
+              <div class="px-3">
+                {{ currentSong ? currentSong.title : "Not Playing" }}
               </div>
     
               <div class="d-flex align-items-center justify-content-between">
@@ -353,48 +281,46 @@
         </div>
       </transition>
 
-      <div style="background-color: #88888820;" class="p-2 pb-0">
-        <div v-if="currentSong">
-          <button @click="showNowPlaying = true" class="btn d-flex justify-content-between w-100 px-3 py-0 mb-1">
-            <div class="text-truncate">
-              {{ currentSong.title }}
-            </div>
-            <div class="btn btn-link pe-0">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-up" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z"/>
-              </svg>
-            </div>
+      <div v-if="currentSong || queue.length > 0" style="background-color: #88888820;" class="p-2 pb-0">
+        <button @click="showNowPlaying = true" class="btn d-flex justify-content-between w-100 px-3 py-0">
+          <div class="text-truncate">
+            {{ currentSong ? currentSong.title : "Not Playing" }}
+          </div>
+          <div class="btn btn-link pe-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-up" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z"/>
+            </svg>
+          </div>
+        </button>
+
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <button @click="togglePlayback" class="btn" :disabled="!player">
+            <svg v-if="!player || paused" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+              <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16">
+              <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+            </svg>
           </button>
 
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <button @click="togglePlayback" class="btn" :disabled="!player">
-              <svg v-if="!player || paused" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
-                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-              </svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16">
-                <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
-              </svg>
-            </button>
-  
-            <div class="flex-grow-1 px-2">
-              <input type="range" @input="seek" v-model="songProgress" :disabled="!player" class="form-range" min="0" max="1" step="0.0001">
-            </div>
-  
-            <div v-if="player" class="small opacity-75 px-2">
-              {{ formatTime(player.currentTime) }}&nbsp;/&nbsp;{{ formatTime(player.duration) }}
-            </div>
-  
-            <button @click="skip" class="btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-skip-forward-fill" viewBox="0 0 16 16">
-                <path d="M15.5 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V8.753l-6.267 3.636c-.54.313-1.233-.066-1.233-.697v-2.94l-6.267 3.636C.693 12.703 0 12.324 0 11.693V4.308c0-.63.693-1.01 1.233-.696L7.5 7.248v-2.94c0-.63.693-1.01 1.233-.696L15 7.248V4a.5.5 0 0 1 .5-.5z"/>
-              </svg>
-            </button>
+          <div class="flex-grow-1 px-2">
+            <input type="range" @input="seek" v-model="songProgress" :disabled="!player" class="form-range" min="0" max="1" step="0.0001">
           </div>
+
+          <div v-if="player" class="small opacity-75 px-2">
+            {{ formatTime(player.currentTime) }}&nbsp;/&nbsp;{{ formatTime(player.duration) }}
+          </div>
+
+          <button @click="skip" class="btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-skip-forward-fill" viewBox="0 0 16 16">
+              <path d="M15.5 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V8.753l-6.267 3.636c-.54.313-1.233-.066-1.233-.697v-2.94l-6.267 3.636C.693 12.703 0 12.324 0 11.693V4.308c0-.63.693-1.01 1.233-.696L7.5 7.248v-2.94c0-.63.693-1.01 1.233-.696L15 7.248V4a.5.5 0 0 1 .5-.5z"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
 
-    <div v-if="playlist.adding" class="position-fixed w-100 h-100 top-0 bg-body p-4 d-flex flex-column justify-content-center">
+    <div v-if="playlist.adding" class="full-page-modal p-4 d-flex flex-column justify-content-center">
       <div v-if="playlist.adding.pop"> <!-- playlist.adding is an array -->
         <h6 v-if="playlist.adding.length === 1">
           Adding '{{ playlist.adding[0].title }}'
@@ -417,14 +343,35 @@
           <button type="button" @click="playlist.adding = null; playlist.name = ''" class="btn btn-sm btn-secondary">
             Cancel
           </button>
-          <button @click="addSelectedToPlaylist" class="btn btn-sm btn-primary ms-3">
+          <button @click="addSelectedToPlaylist" class="btn btn-sm btn-primary ms-3" :disabled="!playlist.name.trim()">
             Add
           </button>
         </div>
       </form>
     </div>
 
-    <div v-if="songEditor.editing" class="position-fixed w-100 h-100 top-0 bg-body d-flex flex-column justify-content-center">
+    <div v-if="playlistEditor.name !== null" class="full-page-modal d-flex flex-column justify-content-center p-3">
+      <label>
+        Playlist Name
+        <input v-model="playlistEditor.name" type="text" class="form-control mb-2">
+      </label>
+      
+      <div class="d-flex justify-content-end">
+        <button @click="removePlaylist" class="btn btn-danger">
+          Delete Playlist
+        </button>
+
+        <button @click="playlistEditor.name = null" class="btn btn-secondary ms-2">
+          Cancel
+        </button>
+
+        <button @click="renamePlaylist" class="btn btn-primary ms-2" :disabled="!playlistEditor.name.trim()">
+          Save
+        </button>
+      </div>
+    </div>
+
+    <div v-if="songEditor.editing" class="full-page-modal d-flex flex-column justify-content-center">
       <div class="container p-4">
         <form @submit.prevent="editSelected">
           <h6 v-if="songEditor.editing.pop">
@@ -480,6 +427,74 @@
         </svg>
       </div>
     </button>
+  </template>
+
+  <template id="song-row">
+    <div class="border-bottom py-1">
+      <div class="d-flex justify-content-between align-items-center">
+        <button @click="playNow(song)" class="btn w-100 text-truncate" style="text-align: start;">
+          {{ song.title }}
+        </button>
+
+        <button @click="toggleOptions(song, i)" class="btn btn-link pe-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="d-flex justify-content-end song-options px-2" :class="{ show: options.song === song && options.i === i }">
+        <div class="me-auto">
+          <button @click="remove(song)" class="playback-button text-danger">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+              <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="ms-auto">
+          <button @click="beginEditing(song)" class="playback-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+              <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+              <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div v-if="nav[0].startsWith('playlist~')" class="ms-2">
+          <button @click="song.removeFromPlaylist(currentPage)" class="playback-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder-minus" viewBox="0 0 16 16">
+              <path d="m.5 3 .04.87a1.99 1.99 0 0 0-.342 1.311l.637 7A2 2 0 0 0 2.826 14H9v-1H2.826a1 1 0 0 1-.995-.91l-.637-7A1 1 0 0 1 2.19 4h11.62a1 1 0 0 1 .996 1.09L14.54 8h1.005l.256-2.819A2 2 0 0 0 13.81 3H9.828a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 6.172 1H2.5a2 2 0 0 0-2 2zm5.672-1a1 1 0 0 1 .707.293L7.586 3H2.19c-.24 0-.47.042-.683.12L1.5 2.98a1 1 0 0 1 1-.98h3.672z"/>
+              <path d="M11 11.5a.5.5 0 0 1 .5-.5h4a.5.5 0 1 1 0 1h-4a.5.5 0 0 1-.5-.5z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="ms-2">
+          <button @click="playlist.adding = song" class="playback-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder-plus" viewBox="0 0 16 16">
+              <path d="m.5 3 .04.87a1.99 1.99 0 0 0-.342 1.311l.637 7A2 2 0 0 0 2.826 14H9v-1H2.826a1 1 0 0 1-.995-.91l-.637-7A1 1 0 0 1 2.19 4h11.62a1 1 0 0 1 .996 1.09L14.54 8h1.005l.256-2.819A2 2 0 0 0 13.81 3H9.828a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 6.172 1H2.5a2 2 0 0 0-2 2zm5.672-1a1 1 0 0 1 .707.293L7.586 3H2.19c-.24 0-.47.042-.683.12L1.5 2.98a1 1 0 0 1 1-.98h3.672z"/>
+              <path d="M13.5 10a.5.5 0 0 1 .5.5V12h1.5a.5.5 0 1 1 0 1H14v1.5a.5.5 0 1 1-1 0V13h-1.5a.5.5 0 0 1 0-1H13v-1.5a.5.5 0 0 1 .5-.5z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="ms-auto">
+          <button @click="addToQueue(song)" class="playback-button">
+            <svg style="transform: scaleY(-1);" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-left" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="ms-2">
+          <button @click="addToQueue(song, true)" class="playback-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-left" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
   </template>
 
   <script src="lib/music-metadata-browser.js"></script>

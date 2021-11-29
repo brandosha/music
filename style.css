@@ -14,6 +14,22 @@
   background-color: #88888860;
 }
 
+.full-page-modal {
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+
+  position: fixed;
+  top: 0;
+
+  background-color: white;
+}
+@media (prefers-color-scheme: dark) {
+  .full-page-modal {
+    background-color: black;
+  }
+}
+
 .song-options {
   max-height: 3em;
   overflow: hidden;
@@ -38,14 +54,14 @@
   opacity: 0;
 }
 
-.queue {
+/* .queue {
   width: 100%;
   height: 100%;
   z-index: 5;
 
   position: fixed;
   top: 0;
-}
+} */
 .queue-enter-active {
   transition: top 0.5s ease-in-out;
 }

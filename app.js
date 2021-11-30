@@ -150,10 +150,13 @@ var app = new Vue({
       } else {
         this.player = null
         this.currentSong = null
+        this.queueIndex = -1
         this.songProgress = 0
       }
     },
     shuffleQueue() {
+      if (this.queue.length <= 1) return
+
       const i = this.queueIndex
       const queue = this.queue
       const current = queue[i]
@@ -570,6 +573,8 @@ setInterval(() => {
 }, 15)
 
 db.onready = () => {
+  console.log(db.songs, db.artists, db.playlists)
+
   app.songs = db.songs
   app.artists = db.artists
   const playlists = app.playlists = db.playlists

@@ -83,6 +83,8 @@ async function respond(req) {
 }
 
 async function cacheRequest(req, res) {
+  if (!res.ok) return
+
   const cache = await caches.open(networkCacheName)
   await cache.put(req, res)
 }

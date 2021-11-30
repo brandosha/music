@@ -16,7 +16,7 @@
       /** @type { () => void } */
       this._onready = value
 
-      if (this.database) {
+      if (this._playlistMap) {
         this._onready()
       }
     }
@@ -58,14 +58,28 @@
         /** @type { IDBDatabase } */
         this.database = await idbPromise(openRequest)
       } catch (err) {
-        indexedDB.deleteDatabase()
+        await idbPromise(indexedDB.deleteDatabase())
+        this.init()
+        return
       }
       
 
       const transaction = this.database.transaction(['songs', 'playlists'], 'readonly')
       const songStore = transaction.objectStore('songs')
 
-      const songs = await idbPromise(songStore.getAll())
+      const songs = []
+      await new Promise(resolve => {
+        const cursorReq = songStore.index('title').openCursor()
+        cursorReq.onsuccess = e => {
+          const cursor = e.target.result
+          if (cursor) {
+            songs.push(cursor.value)
+            cursor.continue()
+          } else {
+            resolve()
+          }
+        }
+      })
 
       const artistMap = { }
       const artists = this.artists = []
@@ -85,7 +99,7 @@
             songs: []
           }
 
-          artists.push(artist)
+          insertSorted(artists, artist, (a, b) => a.name.localeCompare(b.name))
           artistMap[artist.name] = artist
         }
 
@@ -99,7 +113,7 @@
             artist
           }
 
-          artist.albums.push(album)
+          insertSorted(artist.albums, album, (a, b) => a.name.localeCompare(b.name))
           artist.albumMap[album.name] = album
         }
 
@@ -152,13 +166,12 @@
       song.file = file
       await song.updateInStore()
 
-      await caches.open("files v1 @music").then(cache => {
-        const req = new Request(`file-uploads/${key}`)
-        const res = new Response(file, { headers: { 'Content-Type': file.type } })
-        cache.put(req, res)
-      })
+      const cache = await caches.open("files v1 @music")
+      const req = new Request(`file-uploads/${key}`)
+      const res = new Response(file, { headers: { 'Content-Type': file.type } })
+      cache.put(req, res)
 
-      this.songs.push(song)
+      insertSorted(this.songs, song, (a, b) => a.title.localeCompare(b.title))
       return song
     }
 
@@ -168,10 +181,9 @@
 
       await idbPromise(songStore.delete(id))
 
-      await caches.open("files v1 @music").then(cache => {
-        const req = new Request(`file-uploads/${key}`)
-        cache.delete(req)
-      })
+      const cache = await caches.open("files v1 @music")
+      const req = new Request(`file-uploads/${id}`)
+      cache.delete(req)
 
       for (let i = 0; i < this.songs.length; i++) {
         if (this.songs[i].id === id) {
@@ -230,6 +242,9 @@
 
       await idbPromise(songStore.clear())
       await idbPromise(playlistStore.clear())
+
+      const cache = await caches.open("files v1 @music")
+      cache.delete()
 
       this.songs.splice(0, this.songs.length)
     }
@@ -299,10 +314,10 @@
           songs: []
         }
 
-        db.artists.push(artist)
+        insertSorted(db.artists, artist, (a, b) => a.name.localeCompare(b.name))
         db._artistMap[artist.name] = artist
       }
-      artist.songs.push(this)
+      insertSorted(artist.songs, this, (a, b) => a.title.localeCompare(b.title))
 
       let album = artist.albumMap[this.album]
       if (!album) {
@@ -347,10 +362,10 @@
           artist
         }
 
-        artist.albums.push(album)
+        insertSorted(artist.albums, album, (a, b) => a.name.localeCompare(b.name))
         artist.albumMap[album.name] = album
       }
-      album.songs.push(this)
+      insertSorted(album.songs, this, (a, b) => a.title.localeCompare(b.title))
 
       this.album = name
     }
@@ -369,9 +384,9 @@
 
     async remove() {
       const promises = []
-      this.playlists.forEach(name => {
+      this.playlists.forEach((playlist) => {
         promises.push(
-          this.removeFromPlaylist(name)
+          this.removeFromPlaylist(playlist.name)
         )
       })
       await Promise.all(promises)
@@ -421,6 +436,23 @@
       }
 
       this.playlists.delete(name)
+    }
+  }
+
+  function insertSorted(arr, value, compare) {
+    let inserted = false
+    for (let i = 0; i < arr.length; i++) {
+      let val = arr[i]
+
+      if (compare(val, value) >= 0) {
+        arr.splice(i, 0, value)
+        inserted = true
+        break
+      }
+    }
+
+    if (!inserted) {
+      arr.push(value)
     }
   }
 }

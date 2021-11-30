@@ -164,6 +164,7 @@
               </div>
             </div>
 
+            <!-- <song-list :songs="filteredSongs"></song-list> -->
             <song-row v-for="(song, i) in filteredSongs" :song="song" :i="i"></song-row>
           </div>
         </div>
@@ -226,7 +227,7 @@
                 </button>
               </div>
               <div class="scroll-y">
-                <div v-for="(obj, i) in queue">
+                <reorderable v-model="queue" @reorder="queueReordered" :key-path="'key'" v-slot="{ item: obj, i }">
                   <div class="d-flex align-items-center justify-content-between w-100 p-2 border-bottom">
                     <div>
                       <svg v-if="queueIndex === i" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
@@ -243,7 +244,7 @@
                       &times;
                     </button>
                   </div>
-                </div>
+                </reorderable>
               </div>
             </div>
   
@@ -497,10 +498,25 @@
     </div>
   </template>
 
+  <template id="song-list">
+    <div>
+      <song-row v-for="(song, i) in songs" :song="song" :i="i"></song-row>
+    </div>
+  </template>
+
+  <template id="reorderable">
+    <transition-group tag="div" name="reorderable">
+      <div v-for="(item, i) in value" :key="keyPath ? item[keyPath] : item" :class="{ 'reorderable-moving': moving === i }">
+        <slot :item="item" :i="i"></slot>
+      </div>
+    </transition-group>
+  </template>
+
   <script src="lib/music-metadata-browser.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
 
   <script src="db.js"></script>
+  <script src="components.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -10,6 +10,7 @@ var app = new Vue({
     playlists: [],
     
     queue: [],
+    nextQueueItemKey: 0,
     queueIndex: 0,
     currentSong: null,
     songProgress: 0,
@@ -91,7 +92,7 @@ var app = new Vue({
       const player = new Audio(song.fileUrl())
       player.preload = "metadata"
 
-      const queueObj = { song, player }
+      const queueObj = { song, player, key: this.nextQueueItemKey++ }
       if (next) {
         this.queue.splice(this.queueIndex + 1, 0, queueObj)
       } else {
@@ -155,7 +156,7 @@ var app = new Vue({
       }
     },
     shuffleQueue() {
-      if (this.queue.length <= 1) return
+      if (this.queue.length < 2) return
 
       const i = this.queueIndex
       const queue = this.queue
@@ -184,6 +185,24 @@ var app = new Vue({
       } else {
         this.queue = []
         this.queueIndex = -1
+      }
+    },
+    queueReordered(event) {
+      const i = this.queueIndex
+      const { from, to } = event
+
+      if (from === i) {
+        this.queueIndex = to
+      } else if (to === i) {
+        if (from > i) {
+          this.queueIndex += 1
+        } else {
+          this.queueIndex -= 1
+        }
+      } else if (from < i && to > i) {
+        this.queueIndex -= 1
+      } else if (from > i && to < i) {
+        this.queueIndex += 1
       }
     },
 
@@ -465,40 +484,6 @@ var app = new Vue({
         document.title = "Not Playing"
       }
     },
-    songs(songs) {
-      if (!songs) return
-
-      let outOfOrder = false
-      for (let i = 1; i < songs.length; i++) {
-        const a = songs[i - 1].title
-        const b = songs[i].title
-
-        if (a.localeCompare(b) === 1) {
-          outOfOrder = true
-          break
-        }
-      }
-      if (outOfOrder) {
-        songs.sort((a, b) => a.title.localeCompare(b.title))
-      }
-    },
-    artists(artists) {
-      if (!artists) return
-
-      let outOfOrder = false
-      for (let i = 1; i < artists.length; i++) {
-        const a = artists[i - 1].name
-        const b = artists[i].name
-
-        if (a.localeCompare(b) === 1) {
-          outOfOrder = true
-          break
-        }
-      }
-      if (outOfOrder) {
-        artists.sort((a, b) => a.name.localeCompare(b.name))
-      }
-    },
     nav(nav) {
       app.search = ""
 
@@ -534,30 +519,6 @@ var app = new Vue({
   }
 })
 
-Vue.component("nav-button", {
-  props: ["page"],
-  template: document.getElementById("nav-button").innerHTML,
-  methods: {
-    navigate() {
-      app.nav.unshift(this.page)
-    }
-  }
-})
-
-Vue.component("song-row", {
-  props: ["song", "i"],
-  data() {
-    const shared = ["nav", "options", "toggleOptions", "addToQueue", "playNow", "beginEditing", "playlist", "currentPage"]
-    const data = {}
-    shared.forEach(key => {
-      data[key] = app[key]
-    })
-
-    return data
-  },
-  template: document.getElementById("song-row").innerHTML
-})
-
 setInterval(() => {
   if (app.player && app.player.paused !== app.paused) {
     app.paused = app.player.paused
@@ -573,8 +534,6 @@ setInterval(() => {
 }, 15)
 
 db.onready = () => {
-  console.log(db.songs, db.artists, db.playlists)
-
   app.songs = db.songs
   app.artists = db.artists
   const playlists = app.playlists = db.playlists

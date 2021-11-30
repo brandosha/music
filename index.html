@@ -226,26 +226,24 @@
                   </svg>
                 </button>
               </div>
-              <div class="scroll-y">
-                <reorderable v-model="queue" @reorder="queueReordered" :key-path="'key'" v-slot="{ item: obj, i }">
-                  <div class="d-flex align-items-center justify-content-between w-100 p-2 border-bottom">
-                    <div>
-                      <svg v-if="queueIndex === i" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
-                        <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-                      </svg>
-                      <svg v-else width="16" height="16"></svg>
-                    </div>
-                    
-                    <button @click="playAtIndex(i)" class="btn px-1 flex-grow-1 text-truncate text-start">
-                      {{ obj.song.title }}
-                    </button>
-      
-                    <button @click="removeFromQueue(i)" class="btn btn-lg p-0 text-danger" :disabled="queueIndex === i">
-                      &times;
-                    </button>
+              <reorderable v-model="queue" @reorder="queueReordered" :key-path="'key'" v-slot="{ item: obj, i }" class="scroll-y">
+                <div class="d-flex align-items-center justify-content-between w-100 p-2 border-bottom">
+                  <div>
+                    <svg v-if="queueIndex === i" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+                      <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                    </svg>
+                    <svg v-else width="16" height="16"></svg>
                   </div>
-                </reorderable>
-              </div>
+                  
+                  <button @click="playAtIndex(i)" class="btn px-1 flex-grow-1 text-truncate text-start">
+                    {{ obj.song.title }}
+                  </button>
+    
+                  <button @click="removeFromQueue(i)" class="btn btn-lg p-0 text-danger" :disabled="queueIndex === i">
+                    &times;
+                  </button>
+                </div>
+              </reorderable>
             </div>
   
             <div>
@@ -506,7 +504,7 @@
 
   <template id="reorderable">
     <transition-group tag="div" name="reorderable">
-      <div v-for="(item, i) in value" :key="keyPath ? item[keyPath] : item" :class="{ 'reorderable-moving': moving === i }">
+      <div v-for="(item, i) in value" :key="keyPath ? item[keyPath] : item" :id="'reorderable-item-' + i" :class="{ 'reorderable-moving': moving === i }">
         <slot :item="item" :i="i"></slot>
       </div>
     </transition-group>

@@ -49,7 +49,11 @@ Vue.component("reorderable", {
       moving: null,
       didMove: false,
       pointerDownTimestamp: null,
-      willCancelClick: false
+      willCancelClick: false,
+
+      beginMovingTimeout: null,
+      pointerIndex: null,
+      touchDevice: false
     }
   },
   template: document.getElementById("reorderable"),
@@ -66,31 +70,45 @@ Vue.component("reorderable", {
           this.pointerDown(i, e)
         }
 
-        el.onpointerenter = e => {
-          this.pointerEnter(i, e)
+        if (!this.touchDevice) {
+          el.onpointerenter = e => {
+            if (!this.touchDevice) this.pointerEnter(i, e)
+          }
         }
       }
     },
     pointerDown(i, e) {
-      this.moving = i
       this.didMove = false
       this.willCancelClick = false
 
       this.pointerDownTimestamp = Date.now()
+      this.pointerIndex = i
+
+      this.beginMovingTimeout = setTimeout(() => {
+        this.moving = i
+      }, 250);
+
+      e.preventDefault()
+      e.stopPropagation()
     },
     pointerEnter(i) {
-      if (this.moving !== null) {
-        const list = this.value
-
-        const movingVal = list[this.moving]
-        list.splice(this.moving, 1)
-        list.splice(i, 0, movingVal)
-        this.$emit("input", list)
-        this.$emit("reorder", { from: this.moving, to: i })
-
-        this.moving = i
-        this.didMove = true
+      if (this.moving === null) {
+        clearTimeout(this.beginMovingTimeout)
+        return
       }
+      if (i === this.moving) return
+
+      const list = this.value
+
+      const movingVal = list[this.moving]
+      list.splice(this.moving, 1)
+      list.splice(i, 0, movingVal)
+      this.$emit("input", list)
+      this.$emit("reorder", { from: this.moving, to: i })
+
+      this.moving = i
+      this.elIndex = i
+      this.didMove = true
     },
     pointerUp(e) {
       if (this.moving !== null) {
@@ -103,18 +121,61 @@ Vue.component("reorderable", {
     }
   },
   mounted() {
+    /** @type { HTMLDivElement } */
+    const rootEl = this.$el
+
     window.addEventListener("pointerup", e => {
       this.pointerUp(e)
       return false
     })
+
+
     window.addEventListener("click", e => {
       if (this.willCancelClick) {
         e.preventDefault()
         e.stopPropagation()
 
         this.willCancelClick = false
+      } else {
+        this.moving = null
+        clearTimeout(this.beginMovingTimeout)
       }
     }, { capture: true })
+
+    window.addEventListener("touchmove", e => {
+      this.touchDevice = true
+
+      if (this.moving === null) return
+
+      const mouseY = e.touches[0].clientY
+      const rootRect = rootEl.getBoundingClientRect()
+      let top = rootRect.top - rootEl.scrollTop
+      let index = 0
+
+      for (const el of rootEl.children) {
+        const rect = el.getBoundingClientRect()
+        const bottom = top + rect.height
+
+        if (mouseY >= top && mouseY <= bottom) {
+          if (this.pointerIndex !== index) {
+            this.pointerEnter(index)
+            this.pointerIndex = index
+          }
+
+          break
+        }
+
+        top = bottom
+        index += 1
+      }
+
+      e.preventDefault()
+    }, { passive: false })
+
+    this.$el.addEventListener("scroll", e => {
+      this.moving = null
+      clearTimeout(this.beginMovingTimeout)
+    }, { passive: true })
 
     this.updateEvents()
   },

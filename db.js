@@ -410,6 +410,29 @@
       })
       await Promise.all(promises)
 
+      try {
+        let previousArtist = db._artistMap[this.artist]
+        const artistSongIndex = previousArtist.songs.indexOf(this)
+        if (artistSongIndex > -1) {
+          previousArtist.songs.splice(artistSongIndex, 1)
+        }
+
+        let previousAlbum = previousArtist.albumMap[this.album]
+        const albumSongIndex = previousAlbum.songs.indexOf(this)
+        if (albumSongIndex > -1) {
+          previousAlbum.songs.splice(albumSongIndex, 1)
+        }
+
+        if (previousAlbum.songs.length === 0) {
+          previousArtist.albums.splice(previousArtist.albums.indexOf(previousAlbum), 1)
+          previousArtist.albumMap[this.album] = undefined
+        }
+        if (previousArtist.songs.length === 0) {
+          db.artists.splice(db.artists.indexOf(previousArtist), 1)
+          db._artistMap[this.artist] = undefined
+        }
+      } catch (err) { }
+
       await db.removeSong(this.id)
     }
 

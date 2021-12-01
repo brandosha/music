@@ -130,8 +130,15 @@ var app = new Vue({
     playAtIndex(index) {
       const item = this.queue[index]
 
-      if (this.player) {
-        this.player.pause()
+      const prevPlayer = this.player
+      if (prevPlayer) {
+        // Reset previous player
+        prevPlayer.pause()
+
+        const src = prevPlayer.src
+        prevPlayer.src = undefined
+        prevPlayer.load()
+        prevPlayer.src = src
       }
 
       if (item) {

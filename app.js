@@ -90,7 +90,7 @@ var app = new Vue({
       }
 
       const player = new Audio(song.fileUrl())
-      player.preload = "metadata"
+      player.preload = "none"
 
       const queueObj = { song, player, key: this.nextQueueItemKey++ }
       if (next) {
@@ -113,7 +113,7 @@ var app = new Vue({
       await this.addToQueue(song, true)
       alert.ignore = false
 
-      if (playingNow) this.skip()
+      if (playingNow) this.playNext()
     },
 
     playNext() {
@@ -127,12 +127,6 @@ var app = new Vue({
 
       this.playAtIndex(nextIndex)
     },
-    skip() {
-      if (this.player) {
-        this.player.pause()
-      }
-      this.playNext()
-    },
     playAtIndex(index) {
       const item = this.queue[index]
 
@@ -144,6 +138,7 @@ var app = new Vue({
         item.player.currentTime = 0
 
         this.player = item.player
+        item.player.load()
         item.player.play()
         
         this.queueIndex = index

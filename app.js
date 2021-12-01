@@ -162,11 +162,17 @@ var app = new Vue({
       const queue = this.queue
       const current = queue[i]
 
-      queue.splice(i, 1)
-      shuffle(queue)
-      queue.unshift(current)
+      if (current) {
+        queue.splice(i, 1)
+        shuffle(queue)
+        queue.unshift(current)
+        this.queueIndex = 0
+      } else {
+        shuffle(queue)
+        this.queueIndex = -1
 
-      this.queueIndex = 0
+        Vue.set(this.queue, 0, queue[0]) // Vue.set is a hack to update the queue
+      }
     },
     removeFromQueue(i) {
       this.queue.splice(i, 1)
@@ -175,17 +181,8 @@ var app = new Vue({
       }
     },
     clearQueue() {
-      if (this.currentSong) {
-        this.queue = [{
-          song: this.currentSong,
-          player: this.player
-        }]
-
-        this.queueIndex = 0
-      } else {
-        this.queue = []
-        this.queueIndex = -1
-      }
+      this.queue = []
+      this.queueIndex = -1
     },
     queueReordered(event) {
       const i = this.queueIndex

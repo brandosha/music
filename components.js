@@ -52,8 +52,7 @@ Vue.component("reorderable", {
       willCancelClick: false,
 
       beginMovingTimeout: null,
-      pointerIndex: null,
-      touchDevice: false
+      pointerIndex: null
     }
   },
   template: document.getElementById("reorderable"),
@@ -68,12 +67,6 @@ Vue.component("reorderable", {
 
         el.onpointerdown = e => {
           this.pointerDown(i, e)
-        }
-
-        if (!this.touchDevice) {
-          el.onpointerenter = e => {
-            if (!this.touchDevice) this.pointerEnter(i, e)
-          }
         }
       }
     },
@@ -118,36 +111,14 @@ Vue.component("reorderable", {
           this.willCancelClick = true
         }
       }
-    }
-  },
-  mounted() {
-    /** @type { HTMLDivElement } */
-    const rootEl = this.$el
+    },
 
-    window.addEventListener("pointerup", e => {
-      this.pointerUp(e)
-      return false
-    })
-
-
-    window.addEventListener("click", e => {
-      if (this.willCancelClick) {
-        e.preventDefault()
-        e.stopPropagation()
-
-        this.willCancelClick = false
-      } else {
-        this.moving = null
-        clearTimeout(this.beginMovingTimeout)
-      }
-    }, { capture: true })
-
-    window.addEventListener("touchmove", e => {
-      this.touchDevice = true
-
+    pointerMove(mouseX, mouseY, e) {
       if (this.moving === null) return
 
-      const mouseY = e.touches[0].clientY
+      /** @type { HTMLDivElement } */
+      const rootEl = this.$el
+
       const rootRect = rootEl.getBoundingClientRect()
       let top = rootRect.top - rootEl.scrollTop
       let index = 0
@@ -169,11 +140,45 @@ Vue.component("reorderable", {
         index += 1
       }
 
-      e.preventDefault()
-    }, { passive: false })
+      if (mouseY > rootRect.bottom) {
+        console.log("below", mouseY - rootRect.bottom)
+        rootEl.scrollTop += (mouseY - rootRect.bottom) / 5
+      } else if (mouseY < rootRect.top) {
+        console.log("above", rootRect.top - mouseY)
+        rootEl.scrollTop -= (rootRect.top - mouseY) / 5
+      }
 
+      e.preventDefault()
+    }
+  },
+  mounted() {
+    window.addEventListener("pointerup", e => {
+      this.pointerUp(e)
+      return false
+    })
+
+    window.addEventListener("pointermove", e => {
+      this.pointerMove(e.clientX, e.clientY, e)
+    })
+
+    // prevent click event from firing after moving
+    window.addEventListener("click", e => {
+      if (this.willCancelClick) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        this.willCancelClick = false
+      } else {
+        this.moving = null
+        clearTimeout(this.beginMovingTimeout)
+      }
+    }, { capture: true })
+
+    // prevent scrolling on touch devices
+    window.addEventListener("touchmove", e => {
+      if (this.moving !== null) e.preventDefault()
+    }, { passive: false })
     this.$el.addEventListener("scroll", e => {
-      this.moving = null
       clearTimeout(this.beginMovingTimeout)
     }, { passive: true })
 

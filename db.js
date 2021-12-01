@@ -200,7 +200,7 @@
       const list = { name, songs }
       await idbPromise(playlistStore.add(list))
 
-      this.playlists.push(list)
+      insertSorted(this.playlists, list, (a, b) => a.name.localeCompare(b.name))
       this._playlistMap[name] = list
 
       return list
@@ -231,11 +231,27 @@
       const transaction = this.database.transaction(['playlists'], 'readwrite')
       const playlistStore = transaction.objectStore('playlists')
 
-      playlistStore.delete(oldName)
-      playlistStore.put({
-        name: newName,
-        songs: playlist.songs.map(song => song.id)
-      })
+      await idbPromise(playlistStore.delete(oldName))
+      await idbPromise(
+        playlistStore.put({
+          name: newName,
+          songs: playlist.songs.map(song => song.id)
+        })
+      )
+    }
+    async savePlaylist(name) {
+      const playlist = db._playlistMap[name]
+      if (!playlist) return
+
+      const transaction = this.database.transaction(['playlists'], 'readwrite')
+      const playlistStore = transaction.objectStore('playlists')
+
+      await idbPromise(
+        playlistStore.put({
+          name: playlist.name,
+          songs: playlist.songs.map(song => song.id)
+        })
+      )
     }
 
     async clear() {
@@ -330,10 +346,10 @@
           artist
         }
 
-        artist.albums.push(album)
+        insertSorted(artist.albums, album, (a, b) => a.name.localeCompare(b.name))
         artist.albumMap[album.name] = album
       }
-      album.songs.push(this)
+      insertSorted(album.songs, this, (a, b) => a.title.localeCompare(b.title))
 
       this.artist = name
     }
@@ -398,6 +414,8 @@
     }
 
     async addToPlaylist(name) {
+      if (this.playlists.has(name)) return
+
       const { database } = db
 
       const transaction = database.transaction(['playlists'], 'readwrite')
@@ -405,15 +423,15 @@
 
       const playlist = await idbPromise(playlistStore.get(name))
       if (playlist) {
-        playlist.songs.push(this.id)
+        playlist.songs.unshift(this.id)
         await idbPromise(playlistStore.put(playlist))
 
-        db._playlistMap[name].songs.push(this)
+        db._playlistMap[name].songs.unshift(this)
       } else {
         await idbPromise(playlistStore.put({ name, songs: [this.id] }))
 
         const newList = { name, songs: [this] }
-        db.playlists.push(newList)
+        insertSorted(db.playlists, newList, (a, b) => a.name.localeCompare(b.name))
         db._playlistMap[name] = newList
       }
 
@@ -443,19 +461,41 @@
   }
 
   function insertSorted(arr, value, compare) {
-    let inserted = false
-    for (let i = 0; i < arr.length; i++) {
-      let val = arr[i]
+    if (arr.length === 0) {
+      arr.push(value)
+      return
+    } else if (arr.length === 1) {
+      const comparison = compare(value, arr[0])
+      if (comparison < 0) {
+        arr.unshift(value)
+      } else {
+        arr.push(value)
+      }
 
-      if (compare(val, value) >= 0) {
+      return
+    }
+
+    let lower = 0
+    let upper = arr.length - 1
+    let i
+    while (upper >= lower) {
+      i = Math.floor((lower + upper) / 2)
+      const val = arr[i]
+
+      const comparison = compare(val, value)
+
+      if (comparison < 0) {
+        i += 1
+        lower = i
+      } else if (comparison > 0) {
+        upper = i - 1
+      } else {
         arr.splice(i, 0, value)
-        inserted = true
-        break
+        
+        return
       }
     }
 
-    if (!inserted) {
-      arr.push(value)
-    }
+    arr.splice(i, 0, value)
   }
 }

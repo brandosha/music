@@ -303,6 +303,9 @@ var app = new Vue({
         this.playlistEditor.name = null
       }
     },
+    reorderPlaylist() {
+      db.savePlaylist(this.currentPage)
+    },
 
     toggleOptions(song, i) {
       const options = this.options
@@ -350,9 +353,7 @@ var app = new Vue({
 
         editor.album = album
         editor.artist = artist
-      }
-      
-      if (!Array.isArray(song)) {
+      } else {
         editor.title = song.title
         editor.artist = song.artist
         editor.album = song.album
@@ -377,6 +378,9 @@ var app = new Vue({
       const artist = editor.artist.trim()
       const album = editor.album.trim()
 
+      let editingAll = false
+      const filteredLength = this.filteredSongs.length
+
       if (Array.isArray(song)) {
         const songs = song
 
@@ -386,12 +390,27 @@ var app = new Vue({
 
           song.updateInStore()
         })
+
+        editingAll = songs.length === filteredLength
       } else {
         if (title) song.title = title
         if (artist) song.setArtist(artist)
         if (album) song.setAlbum(album)
 
         song.updateInStore()
+
+        editingAll = filteredLength === 1
+      }
+
+      if (editingAll) {
+        const nav = this.nav
+
+        if (nav[0].startsWith("artist~")) {
+          if (artist) Vue.set(nav, 0, "artist~" + artist)
+        } else if (nav[0].startsWith("album~")) {
+          if (album) Vue.set(nav, 0, "album~" + album)
+          if (artist) Vue.set(nav, 1, "artist~" + artist)
+        }
       }
 
       this.clearEditor()
@@ -409,6 +428,12 @@ var app = new Vue({
     }
   },
   computed: {
+    currentPlaylist() {
+      if (this.nav[0].startsWith("playlist~")) {
+        const name = this.currentPage
+        return db._playlistMap[name]
+      }
+    },
     filteredSongs() {
       let songs = this.songs
 
@@ -441,9 +466,7 @@ var app = new Vue({
       } else {
         return songs.filter(song => {
           return (
-            song.title.toLowerCase().includes(search) ||
-            (song.artist !== "unknown" && song.artist.toLowerCase().includes(search)) ||
-            (song.album !== "unknown" && song.album.toLowerCase().includes(search))
+            song.title.toLowerCase().includes(search)
           )
         })
       }

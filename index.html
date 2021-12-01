@@ -351,20 +351,23 @@
 
     <div v-if="playlistEditor.name !== null" class="full-page-modal d-flex flex-column justify-content-center p-3">
       <label>
-        Playlist Name
+        <h6>
+          Playlist Name
+        </h6>
+        
         <input v-model="playlistEditor.name" type="text" class="form-control mb-2">
       </label>
       
       <div class="d-flex justify-content-end">
-        <button @click="removePlaylist" class="btn btn-danger">
+        <button @click="removePlaylist" class="btn btn-sm btn-danger">
           Delete Playlist
         </button>
 
-        <button @click="playlistEditor.name = null" class="btn btn-secondary ms-2">
+        <button @click="playlistEditor.name = null" class="btn btn-sm btn-secondary ms-2">
           Cancel
         </button>
 
-        <button @click="renamePlaylist" class="btn btn-primary ms-2" :disabled="!playlistEditor.name.trim()">
+        <button @click="renamePlaylist" class="btn btn-sm btn-primary ms-2" :disabled="!playlistEditor.name.trim()">
           Save
         </button>
       </div>

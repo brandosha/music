@@ -287,6 +287,7 @@ var app = new Vue({
       if (confirm(`Are you sure you want to delete the playlist '${this.currentPage}'?`)) {
         db.removePlaylist(this.currentPage)
         this.nav = ["~Library"]
+        this.playlistEditor.name = null
       }
     },
     renamePlaylist() {
@@ -296,15 +297,7 @@ var app = new Vue({
       if (db._playlistMap[name]) {
         alert(`A playlist with the name '${name}' already exists`)
       } else {
-        const playlist = db._playlistMap[oldName]
-        playlist.name = name
-        playlist.songs.forEach(song => {
-          song.playlists.delete(oldName)
-          song.playlists.set(name, playlist)
-        })
-
-        db._playlistMap[name] = playlist
-        db._playlistMap[oldName] = undefined
+        db.renamePlaylist(oldName, name)
 
         Vue.set(this.nav, 0, "playlist~" + name)
 

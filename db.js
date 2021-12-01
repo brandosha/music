@@ -222,7 +222,7 @@
       playlist.name = newName
       playlist.songs.forEach(song => {
         song.playlists.delete(oldName)
-        song.playlists.set(name, playlist)
+        song.playlists.set(newName, playlist)
       })
 
       this._playlistMap[newName] = playlist
@@ -232,7 +232,10 @@
       const playlistStore = transaction.objectStore('playlists')
 
       playlistStore.delete(oldName)
-      playlistStore.put(playlist)
+      playlistStore.put({
+        name: newName,
+        songs: playlist.songs.map(song => song.id)
+      })
     }
 
     async clear() {

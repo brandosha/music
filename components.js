@@ -141,10 +141,8 @@ Vue.component("reorderable", {
       }
 
       if (mouseY > rootRect.bottom) {
-        console.log("below", mouseY - rootRect.bottom)
         rootEl.scrollTop += (mouseY - rootRect.bottom) / 5
       } else if (mouseY < rootRect.top) {
-        console.log("above", rootRect.top - mouseY)
         rootEl.scrollTop -= (rootRect.top - mouseY) / 5
       }
 

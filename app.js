@@ -127,6 +127,17 @@ var app = new Vue({
 
       this.playAtIndex(nextIndex)
     },
+    playPrevious() {
+      let previousIndex = 0
+      if (this.currentSong) {
+        previousIndex = this.queueIndex - 1
+      }
+      if (this.willLoop && previousIndex < 0) {
+        previousIndex = this.queue.length - 1
+      }
+
+      this.playAtIndex(previousIndex)
+    },
     playAtIndex(index) {
       const item = this.queue[index]
 
@@ -150,11 +161,29 @@ var app = new Vue({
         
         this.queueIndex = index
         this.currentSong = item.song
+
+        if ("mediaSession" in navigator) {
+          const { mediaSession } = navigator
+
+          mediaSession.metadata = new MediaMetadata({
+            title: item.song.title,
+            artist: item.song.artist,
+            album: item.song.album
+          })
+        }
       } else {
         this.player = null
         this.currentSong = null
         this.queueIndex = -1
         this.songProgress = 0
+
+        if ("mediaSession" in navigator) {
+          const { mediaSession } = navigator
+
+          mediaSession.metadata = new MediaMetadata({
+            title: "Not Playing"
+          })
+        }
       }
     },
     shuffleQueue() {
@@ -530,7 +559,11 @@ var app = new Vue({
 
     "playlistEditor.playlist": function(name) {
       this.playlistEditor.name = name
-    }
+    },
+    
+    queue: setMediaSessionActions,
+    queueIndex: setMediaSessionActions,
+    willLoop: setMediaSessionActions
   }
 })
 
@@ -573,6 +606,30 @@ function shuffle(array) {
   }
 
   return array;
+}
+
+function setMediaSessionActions() {
+  if (!("mediaSession" in navigator)) return
+
+  const { mediaSession } = navigator
+
+  if (app.queueIndex < 0 || app.queueIndex > app.queue.length - 1 || !app.player) {
+    mediaSession.setActionHandler('play', () => app.playAtIndex(0))
+  } else {
+    mediaSession.setActionHandler('play', () => app.player.play())
+  }
+
+  if (app.queueIndex > 0 || app.willLoop) {
+    mediaSession.setActionHandler('previoustrack', app.playPrevious)
+  } else {
+    mediaSession.setActionHandler('previoustrack', null)
+  }
+
+  if (app.queueIndex < app.queue.length - 1 || app.willLoop) {
+    mediaSession.setActionHandler('nexttrack', app.playNext)
+  } else {
+    mediaSession.setActionHandler('nexttrack', null)
+  }
 }
 
 navigator.serviceWorker.register("service-worker.js")

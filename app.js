@@ -165,11 +165,14 @@ var app = new Vue({
         if ("mediaSession" in navigator) {
           const { mediaSession } = navigator
 
-          mediaSession.metadata = new MediaMetadata({
-            title: item.song.title,
-            artist: item.song.artist,
-            album: item.song.album
+          const { song } = item
+          const metadata = new MediaMetadata({
+            title: song.title
           })
+          if (song.artist !== "unknown") metadata.artist = item.song.artist
+          if (song.album !== "unknown") metadata.album = song.album
+
+          mediaSession.metadata = metadata
         }
       } else {
         this.player = null
@@ -518,6 +521,48 @@ var app = new Vue({
       if (page) {
         return page.split("~").slice(1).join("~")
       }
+    },
+
+    // This is basically a glorified watcher
+    setMediaSessionActions() {
+      if (!("mediaSession" in navigator)) return false
+    
+      const { mediaSession } = navigator
+    
+      if (this.queueIndex < 0 || this.queueIndex > this.queue.length - 1 || !this.player) {
+        mediaSession.setActionHandler('play', () => this.playAtIndex(0))
+      } else {
+        mediaSession.setActionHandler('play', () => {
+          this.player.play()
+        })
+      }
+    
+      if (this.player) {
+        mediaSession.setActionHandler('seekto', e => {
+          this.player.currentTime = e.seekTime
+        })
+        mediaSession.setActionHandler('pause', () => {
+          this.player.pause()
+        })
+      } else {
+        mediaSession.setActionHandler('seekto', null)
+        mediaSession.setActionHandler('pause', null)
+      }
+      
+    
+      if (this.queueIndex > 0 || this.willLoop) {
+        mediaSession.setActionHandler('previoustrack', this.playPrevious)
+      } else {
+        mediaSession.setActionHandler('previoustrack', null)
+      }
+    
+      if (this.queueIndex < this.queue.length - 1 || this.willLoop) {
+        mediaSession.setActionHandler('nexttrack', this.playNext)
+      } else {
+        mediaSession.setActionHandler('nexttrack', null)
+      }
+      
+      return true
     }
   },
   watch: {
@@ -561,9 +606,9 @@ var app = new Vue({
       this.playlistEditor.name = name
     },
     
-    queue: setMediaSessionActions,
-    queueIndex: setMediaSessionActions,
-    willLoop: setMediaSessionActions
+    setMediaSessionActions() {
+      // This watcher ensures that the computed property will actually be updated
+    }
   }
 })
 
@@ -606,30 +651,6 @@ function shuffle(array) {
   }
 
   return array;
-}
-
-function setMediaSessionActions() {
-  if (!("mediaSession" in navigator)) return
-
-  const { mediaSession } = navigator
-
-  if (app.queueIndex < 0 || app.queueIndex > app.queue.length - 1 || !app.player) {
-    mediaSession.setActionHandler('play', () => app.playAtIndex(0))
-  } else {
-    mediaSession.setActionHandler('play', () => app.player.play())
-  }
-
-  if (app.queueIndex > 0 || app.willLoop) {
-    mediaSession.setActionHandler('previoustrack', app.playPrevious)
-  } else {
-    mediaSession.setActionHandler('previoustrack', null)
-  }
-
-  if (app.queueIndex < app.queue.length - 1 || app.willLoop) {
-    mediaSession.setActionHandler('nexttrack', app.playNext)
-  } else {
-    mediaSession.setActionHandler('nexttrack', null)
-  }
 }
 
 navigator.serviceWorker.register("service-worker.js")

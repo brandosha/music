@@ -87,6 +87,8 @@ Vue.component("reorderable", {
     pointerEnter(i) {
       if (this.moving === null) {
         clearTimeout(this.beginMovingTimeout)
+        this.beginMovingTimeout = null
+
         return
       }
       if (i === this.moving) return
@@ -114,7 +116,7 @@ Vue.component("reorderable", {
     },
 
     pointerMove(mouseX, mouseY, e) {
-      if (this.moving === null) return
+      if (this.moving === null && this.beginMovingTimeout === null) return
 
       /** @type { HTMLDivElement } */
       const rootEl = this.$el
@@ -169,6 +171,7 @@ Vue.component("reorderable", {
       } else {
         this.moving = null
         clearTimeout(this.beginMovingTimeout)
+        this.beginMovingTimeout = null
       }
     }, { capture: true })
 
@@ -178,6 +181,7 @@ Vue.component("reorderable", {
     }, { passive: false })
     this.$el.addEventListener("scroll", e => {
       clearTimeout(this.beginMovingTimeout)
+      this.beginMovingTimeout = null
     }, { passive: true })
 
     this.updateEvents()

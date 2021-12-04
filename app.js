@@ -496,9 +496,24 @@ var app = new Vue({
       if (search === "") {
         return songs
       } else {
+        const advancedSearchRegex = /(\W|^)(artist|album):(".*?"|[^\s]*)/g
+        const searchData = { }
+        search = search.replaceAll(advancedSearchRegex, (match, _, param, value) => {
+          if (value.startsWith('"')) { value = value.slice(1) }
+          if (value.endsWith('"')) { value = value.slice(0, -1) }
+          value = value.trim()
+
+          searchData[param] = value
+
+          return ""
+        })
+        console.log(search, searchData)
+
         return songs.filter(song => {
           return (
-            song.title.toLowerCase().includes(search)
+            song.title.toLowerCase().includes(search) &&
+            (!searchData.artist || song.artist.toLowerCase().includes(searchData.artist)) &&
+            (!searchData.album  || song.album.toLowerCase().includes(searchData.album))
           )
         })
       }

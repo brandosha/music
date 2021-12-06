@@ -496,25 +496,55 @@ var app = new Vue({
       if (search === "") {
         return songs
       } else {
-        const advancedSearchRegex = /(\W|^)(artist|album):(".*?"|[^\s]*)/g
-        const searchData = { }
-        search = search.replaceAll(advancedSearchRegex, (match, _, param, value) => {
+        const advancedSearchRegex = /(\s|^)(-)?(artist|album|playlist)?:?(".*?"|[^\s]*)/g
+        const matches = search.matchAll(advancedSearchRegex)
+
+        const searchTerms = { }
+        for (let [match, _, negative, param, value] of matches) {
           if (value.startsWith('"')) { value = value.slice(1) }
           if (value.endsWith('"')) { value = value.slice(0, -1) }
+
           value = value.trim()
+          if (!value) continue
 
-          searchData[param] = value
+          if (!param) param = "title"
 
-          return ""
-        })
-        console.log(search, searchData)
+          let terms = searchTerms[param]
+          if (!terms) terms = searchTerms[param] = []
+
+          terms.push({ negative : !!negative, str: value })
+        }
 
         return songs.filter(song => {
-          return (
-            song.title.toLowerCase().includes(search) &&
-            (!searchData.artist || song.artist.toLowerCase().includes(searchData.artist)) &&
-            (!searchData.album  || song.album.toLowerCase().includes(searchData.album))
-          )
+          for (const param in searchTerms) {
+            if (param === "playlist") {
+              const playlists = song.playlists
+
+              for (const term of searchTerms[param]) {
+
+                let some = false
+                for (let [playlist] of playlists) {
+                  if (playlist.toLowerCase().includes(term.str)) {
+                    some = true
+                    break
+                  }
+                }
+
+                if (some === term.negative) return false
+              }
+            } else {
+              const value = song[param].toLowerCase()
+
+              for (const term of searchTerms[param]) {
+                const incl = value.includes(term.str)
+                if (incl === term.negative) {
+                  return false
+                }
+              }
+            }
+          }
+
+          return true
         })
       }
     },

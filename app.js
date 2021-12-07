@@ -669,6 +669,18 @@ var app = new Vue({
       }
       
       return true
+    },
+    // Another glorified watcher because why not :)
+    storeQueue() {
+      if (this.songs.length === 0) return
+
+      const queueData = {
+        index: this.queueIndex,
+        queue: this.queue.map(item => item.song.id),
+        loop: this.willLoop,
+        willShuffle: this.willShuffle
+      }
+      localStorage.setItem("music-queue", JSON.stringify(queueData))
     }
   },
   watch: {
@@ -714,7 +726,8 @@ var app = new Vue({
     
     setMediaSessionActions() {
       // This watcher ensures that the computed property will actually be updated
-    }
+    },
+    storeQueue() { /* Same as above */ }
   }
 })
 
@@ -738,6 +751,27 @@ db.onready = () => {
   const playlists = app.playlists = db.playlists
 
   app.nav = JSON.parse(localStorage.getItem("music-nav")) || app.nav
+
+  const queueData = JSON.parse(localStorage.getItem("music-queue"))
+  if (queueData) {
+    app.queue = queueData.queue.map((id, index) => {
+      const song = db.getSong(id)
+
+      const player = new Audio(song.fileUrl())
+      player.preload = "none"
+
+      if (index === queueData.index) {
+        app.currentSong = song
+        app.player = player
+      }
+
+      return { song, player, key: app.nextQueueItemKey++ }
+    })
+
+    app.queueIndex = queueData.index
+    app.willLoop = queueData.willLoop
+    app.willShuffle = queueData.willShuffle
+  }
 }
 
 // https://stackoverflow.com/a/2450976

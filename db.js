@@ -267,6 +267,10 @@
 
       this.songs.splice(0, this.songs.length)
     }
+
+    getSong(id) {
+      return new Song(id)
+    }
   }
 
   /** @type { Database } */

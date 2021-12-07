@@ -47,9 +47,9 @@
             </div>
           </div>
 
-          <div v-if="nav[0] !== '~Library'" class="mt-2">
+          <div class="mt-2">
             <input type="search" placeholder="Search" class="form-control" v-model="search">
-            <div v-if="filteredSongs.length > 0" class="d-flex mt-2">
+            <div v-if="filteredSongs.length > 0 && nav[0] !== '~Library'" class="d-flex mt-2">
               <div class="me-auto">
                 <button @click="remove(filteredSongs)" class="playback-button text-danger">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
@@ -123,15 +123,15 @@
               All Songs
             </nav-button>
 
-            <div class="mt-3">
+            <div v-if="filteredPlaylists.length > 0 || !search" class="mt-3">
               <div class="px-2 py-1 border-bottom opacity-75 small">
                 Playlists
               </div>
-              <nav-button v-for="playlist in playlists" :page="`playlist~${playlist.name}`" :key="playlist.name">
+              <nav-button v-for="playlist in filteredPlaylists" :page="`playlist~${playlist.name}`" :key="playlist.name">
                 {{ playlist.name }}
               </nav-button>
 
-              <button @click="createPlaylist" class="btn btn-link text-decoration-none d-flex align-items-center">
+              <button v-if="!search" @click="createPlaylist" class="btn btn-link text-decoration-none d-flex align-items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus me-1" viewBox="0 0 16 16">
                   <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
                 </svg>
@@ -139,11 +139,11 @@
               </button>
             </div>
 
-            <div v-if="artists.length > 0" class="mt-3">
+            <div v-if="filteredArtists.length > 0" class="mt-3">
               <div class="px-2 py-1 border-bottom opacity-75 small">
                 Artists
               </div>
-              <nav-button v-for="artist in artists" :page="`artist~${artist.name}`" :key="artist.name">
+              <nav-button v-for="artist in filteredArtists" :page="`artist~${artist.name}`" :key="artist.name">
                 {{ artist.name }}
               </nav-button>
             </div>
@@ -151,11 +151,11 @@
           
           <div v-else>
             <div v-if="nav[0].startsWith('artist~')">
-              <div v-if="artistsAlbums.length > 0">
+              <div v-if="filteredAlbums.length > 0">
                 <div class="px-2 py-1 border-bottom opacity-75 small">
                   Albums
                 </div>
-                <nav-button v-for="album in artistsAlbums" :page="`album~${album.name}`" :key="album.name">
+                <nav-button v-for="album in filteredAlbums" :page="`album~${album.name}`" :key="album.name">
                   {{ album.name }}
                 </nav-button>
               </div>

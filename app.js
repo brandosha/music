@@ -466,6 +466,34 @@ var app = new Vue({
         return db._playlistMap[name]
       }
     },
+
+    searchTerms() {
+      const search = this.search.trim().toLowerCase()
+      if (search === "") {
+        return null
+      } else {
+        const advancedSearchRegex = /(\s|^)(-)?(artist|album|playlist)?:?(".*?"|[^\s]*)/g
+        const matches = search.matchAll(advancedSearchRegex)
+
+        const searchTerms = { }
+        for (let [match, _, negative, param, value] of matches) {
+          if (value.startsWith('"')) { value = value.slice(1) }
+          if (value.endsWith('"')) { value = value.slice(0, -1) }
+
+          value = value.trim()
+          if (!value) continue
+
+          if (!param) param = "title"
+
+          let terms = searchTerms[param]
+          if (!terms) terms = searchTerms[param] = []
+
+          terms.push({ negative : !!negative, str: value })
+        }
+
+        return searchTerms
+      }
+    },
     filteredSongs() {
       let songs = this.songs
 
@@ -492,29 +520,10 @@ var app = new Vue({
         return this.filteredSongs
       }
 
-      let search = this.search.trim().toLowerCase()
-      if (search === "") {
+      const searchTerms = this.searchTerms
+      if (!searchTerms) {
         return songs
       } else {
-        const advancedSearchRegex = /(\s|^)(-)?(artist|album|playlist)?:?(".*?"|[^\s]*)/g
-        const matches = search.matchAll(advancedSearchRegex)
-
-        const searchTerms = { }
-        for (let [match, _, negative, param, value] of matches) {
-          if (value.startsWith('"')) { value = value.slice(1) }
-          if (value.endsWith('"')) { value = value.slice(0, -1) }
-
-          value = value.trim()
-          if (!value) continue
-
-          if (!param) param = "title"
-
-          let terms = searchTerms[param]
-          if (!terms) terms = searchTerms[param] = []
-
-          terms.push({ negative : !!negative, str: value })
-        }
-
         return songs.filter(song => {
           for (const param in searchTerms) {
             if (param === "playlist") {
@@ -548,11 +557,63 @@ var app = new Vue({
         })
       }
     },
-    artistsAlbums() {
-      if (!this.nav[0].startsWith("artist~")) return
+    filteredArtists() {
+      const searchTerms = this.searchTerms
+      if (!searchTerms) return this.artists
 
+      if (Object.keys(searchTerms).some(param => param !== "title" && param !== "artist")) return []
+      const terms = []
+      if (searchTerms.title) terms.push(...searchTerms.title)
+      if (searchTerms.artist) terms.push(...searchTerms.artist)
+
+      return this.artists.filter(artist => {
+        for (const term of terms) {
+          const incl = artist.name.toLowerCase().includes(term.str)
+          if (term.negative === incl) return false
+        }
+
+        return true
+      })
+    },
+    filteredAlbums() {
+      if (!this.nav[0].startsWith("artist~")) return
       const artist = this.currentPage
-      return db._artistMap[artist].albums
+      const albums = db._artistMap[artist].albums
+
+      const searchTerms = this.searchTerms
+      if (!searchTerms) return albums
+
+      if (Object.keys(searchTerms).some(param => param !== "title" && param !== "album")) return []
+      const terms = []
+      if (searchTerms.title) terms.push(...searchTerms.title)
+      if (searchTerms.album) terms.push(...searchTerms.album)
+
+      return albums.filter(album => {
+        for (const term of terms) {
+          const incl = album.name.toLowerCase().includes(term.str)
+          if (term.negative === incl) return false
+        }
+
+        return true
+      })
+    },
+    filteredPlaylists() {
+      const searchTerms = this.searchTerms
+      if (!searchTerms) return this.playlists
+
+      if (Object.keys(searchTerms).some(param => param !== "title" && param !== "playlist")) return []
+      const terms = []
+      if (searchTerms.title) terms.push(...searchTerms.title)
+      if (searchTerms.playlist) terms.push(...searchTerms.playlist)
+
+      return this.playlists.filter(playlist => {
+        for (const term of terms) {
+          const incl = playlist.name.toLowerCase().includes(term.str)
+          if (term.negative === incl) return false
+        }
+
+        return true
+      })
     },
 
     currentPage() {

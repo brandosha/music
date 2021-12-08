@@ -114,7 +114,7 @@
       </div>
 
       <reorderable v-model="currentPlaylist.songs" @reorder="reorderPlaylist" :key-path="'id'" v-slot="{ item: song, i }" v-if="view === 'library' && search === '' && nav[0].startsWith('playlist~')"  class="flex-grow-1 scroll-y" style="min-height: 0;">
-        <song-row :song="song" :i="i"></song-row>
+        <song-row :song="song" :i="i" :show-artist="true"></song-row>
       </reorderable>
       <div v-else class="flex-grow-1 scroll-y">
         <div v-if="view === 'library'">
@@ -166,7 +166,7 @@
             </div>
 
             <!-- <song-list :songs="filteredSongs"></song-list> -->
-            <song-row v-for="(song, i) in filteredSongs" :song="song" :i="i"></song-row>
+            <song-row v-for="(song, i) in filteredSongs" :song="song" :i="i" :show-artist="nav[0] === '~All Songs' || nav[0].startsWith('playlist~')"></song-row>
           </div>
         </div>
 
@@ -247,6 +247,9 @@
                   
                   <button @click="playAtIndex(i)" class="btn px-1 flex-grow-1 text-truncate text-start">
                     {{ obj.song.title }}
+                    <div class="small text-muted text-truncate">
+                      {{ obj.song.artist }}
+                    </div>
                   </button>
     
                   <button @click="removeFromQueue(i)" class="btn btn-lg p-0 text-danger" :disabled="queueIndex === i">
@@ -459,6 +462,9 @@
       <div class="d-flex justify-content-between align-items-center">
         <button @click="playNow(song)" class="btn w-100 text-truncate text-start">
           {{ song.title }}
+          <div v-if="showArtist" class="small text-muted text-truncate">
+            {{ song.artist }}
+          </div>
         </button>
 
         <button @click="toggleOptions(song, i)" class="btn btn-link pe-3">

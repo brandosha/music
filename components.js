@@ -9,7 +9,7 @@ Vue.component("nav-button", {
 })
 
 Vue.component("song-row", {
-  props: ["song", "i"],
+  props: ["song", "i", "showArtist"],
   data() {
     const shared = ["nav", "options", "toggleOptions", "addToQueue", "playNow", "beginEditing", "playlist", "currentPage", "remove"]
     const data = {}

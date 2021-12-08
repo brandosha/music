@@ -90,37 +90,39 @@
         const song = new Song(obj.id, obj)
         songMap[obj.id] = song
 
-        let artist = artistMap[song.artist]
-        if (!artist) {
-          artist = {
-            name: song.artist,
-            albumMap: { },
-            albums: [],
-            songs: []
+        song.artists.forEach(name => {
+          let artist = artistMap[name]
+          if (!artist) {
+            artist = {
+              name,
+              albumMap: { },
+              albums: [],
+              songs: []
+            }
+
+            insertSorted(artists, artist, (a, b) => a.name.localeCompare(b.name))
+            artistMap[artist.name] = artist
           }
 
-          insertSorted(artists, artist, (a, b) => a.name.localeCompare(b.name))
-          artistMap[artist.name] = artist
-        }
+          artist.songs.push(song)
 
-        artist.songs.push(song)
+          let album = artist.albumMap[song.album]
+          if (!album) {
+            album = {
+              name: song.album,
+              songs: [],
+              artist
+            }
 
-        let album = artist.albumMap[song.album]
-        if (!album) {
-          album = {
-            name: song.album,
-            songs: [],
-            artist
+            insertSorted(artist.albums, album, (a, b) => a.name.localeCompare(b.name))
+            artist.albumMap[album.name] = album
           }
 
-          insertSorted(artist.albums, album, (a, b) => a.name.localeCompare(b.name))
-          artist.albumMap[album.name] = album
-        }
-
-        album.songs.push(song)
-        if (song.id > this.lastKey) {
-          this.lastKey = song.id
-        }
+          album.songs.push(song)
+          if (song.id > this.lastKey) {
+            this.lastKey = song.id
+          }
+        })
 
         return song
       })
@@ -269,7 +271,7 @@
     }
 
     getSong(id) {
-      return new Song(id)
+      return this._songMap[id]
     }
   }
 
@@ -290,6 +292,12 @@
       this.artist = data.artist || "unknown"
       this.album = data.album || "unknown"
 
+      this.artists = [this.artist]
+      const split = this.artist.split(/,\s+/)
+      if (split.length > 1) {
+        this.artists.push(...split)
+      }
+
       if (db._artistMap) {
         this.setArtist(data.artist || "unknown", true)
         this.setAlbum(data.album || "unknown", true)
@@ -302,11 +310,9 @@
       return "file-uploads/" + this.id
     }
 
-    async setArtist(name, force = false) {
-      if (!force && name == this.artist) return
-
+    _removeFromArtist(name) {
       try {
-        let previousArtist = db._artistMap[this.artist]
+        let previousArtist = db._artistMap[name]
         const artistSongIndex = previousArtist.songs.indexOf(this)
         if (artistSongIndex > -1) {
           previousArtist.songs.splice(artistSongIndex, 1)
@@ -324,10 +330,11 @@
         }
         if (previousArtist.songs.length === 0) {
           db.artists.splice(db.artists.indexOf(previousArtist), 1)
-          db._artistMap[this.artist] = undefined
+          db._artistMap[name] = undefined
         }
       } catch (err) { }
-
+    }
+    _addToArtist(name) {
       let artist = db._artistMap[name]
       if (!artist) {
         artist = {
@@ -354,8 +361,25 @@
         artist.albumMap[album.name] = album
       }
       insertSorted(album.songs, this, (a, b) => a.title.localeCompare(b.title))
+    }
+
+    async setArtist(name, force = false) {
+      if (!force && name == this.artist) return
+
+      this.artists.forEach(name => {
+        this._removeFromArtist(name)
+      })
 
       this.artist = name
+      this.artists = [name]
+      const split = name.split(/,\s+/)
+      if (split.length > 1) {
+        this.artists.push(...split)
+      }
+
+      this.artists.forEach(name => {
+        this._addToArtist(name)
+      })
     }
 
     async setAlbum(name, force = false) {

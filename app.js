@@ -759,6 +759,7 @@ db.onready = () => {
 
       const player = new Audio(song.fileUrl())
       player.preload = "none"
+      player.onended = () => app.playNext()
 
       if (index === queueData.index) {
         app.currentSong = song

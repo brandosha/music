@@ -178,21 +178,6 @@
             <song-row v-for="(song, i) in filteredSongs" :song="song" :i="i" :show-artist="nav[0] === '~All Songs' || nav[0].startsWith('playlist~') || (nav[0].startsWith('album~') && nav[1] === '~Library') || multiArtistAlbum" :show-album="!nav[0].startsWith('album~')"></song-row>
           </div>
         </div>
-
-        <transition name="action-alert">
-          <div v-if="alert.song && alert.show" class="action-alert p-3 pb-0 w-100">
-            <div class="alert alert-success m-0 px-3 py-2">
-              Playing
-              <span v-if="alert.song.pop"> <!-- alert.song is an array -->
-                {{ alert.song.length }} Songs
-              </span>
-              <span v-else>
-                '{{ alert.song.title }}'
-              </span>
-              {{ alert.type }}
-            </div>
-          </div>
-        </transition>
       </div>
 
       <transition name="queue">
@@ -284,7 +269,7 @@
               <div class="d-flex justify-content-between align-items-center px-3 mb-2">
                 <div class="flex-grow-1">
                   {{ currentSong ? currentSong.title : "Not Playing" }}
-                  <div class="small text-muted">
+                  <div v-if="currentSong" class="small text-muted">
                     {{ currentSong.artist }} &mdash; {{ currentSong.album }}
                   </div>
                 </div>
@@ -323,6 +308,21 @@
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </transition>
+
+      <transition name="action-alert">
+        <div v-if="alert.song && alert.show" class="action-alert p-3 pb-0 w-100">
+          <div class="alert alert-success m-0 px-3 py-2">
+            Playing
+            <span v-if="alert.song.pop"> <!-- alert.song is an array -->
+              {{ alert.song.length }} Songs
+            </span>
+            <span v-else>
+              '{{ alert.song.title }}'
+            </span>
+            {{ alert.type }}
           </div>
         </div>
       </transition>

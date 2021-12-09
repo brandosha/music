@@ -7,6 +7,7 @@ var app = new Vue({
 
     songs: [],
     artists: [],
+    albums: [],
     playlists: [],
     
     queue: [],
@@ -296,10 +297,11 @@ var app = new Vue({
       }
     },
 
-    createPlaylist() {
+    async createPlaylist() {
       const name = prompt("Enter a name for the new playlist:")
       if (name) {
-        db.createPlaylist(name)
+        await db.createPlaylist(name)
+        this.nav = ["playlist~" + name, "~Library"]
       }
     },
     addSelectedToPlaylist() {
@@ -457,6 +459,11 @@ var app = new Vue({
       const minutes = Math.floor(seconds / 60)
       const secondsLeft = seconds % 60
       return `${minutes}:${secondsLeft < 10 ? "0" : ""}${secondsLeft}`
+    },
+
+    showSong(song) {
+      this.nav = ["album~" + song.album, "artist~" + song.artist, "~Library"]
+      this.showNowPlaying = false
     }
   },
   computed: {
@@ -465,6 +472,22 @@ var app = new Vue({
         const name = this.currentPage
         return db._playlistMap[name]
       }
+    },
+    currentAlbum() {
+      if (this.nav[0].startsWith("album~")) {
+        return db._albumMap[this.currentPage]
+      }
+    },
+    multiArtistAlbum() {
+      const currentAlbum = this.currentAlbum
+      if (!currentAlbum) return false
+
+      const { songs } = currentAlbum
+      for (let i = 1; i < songs.length; i++) {
+        if (songs[i].artist !== songs[0].artist) return true
+      }
+
+      return false
     },
 
     searchTerms() {
@@ -499,18 +522,16 @@ var app = new Vue({
 
       try {
         if (this.nav[0].startsWith("playlist~")) {
-          const name = this.currentPage
-          songs = db._playlistMap[name].songs
+          songs = this.currentPlaylist.songs
         } else if (this.nav[0].startsWith("artist~")) {
           const name = this.currentPage
           songs = db._artistMap[name].songs
         } else if (this.nav[0].startsWith("album~")) {
-          const artist = this.previousPage
-          const album = this.currentPage
-  
-          songs = db._artistMap[artist].albumMap[album].songs
+          songs = this.currentAlbum.songs
         }
       } catch (err) {
+        console.log(err)
+
         if (this.nav.length > 1) {
           this.nav.shift()
         } else {
@@ -576,9 +597,12 @@ var app = new Vue({
       })
     },
     filteredAlbums() {
-      if (!this.nav[0].startsWith("artist~")) return
-      const artist = this.currentPage
-      const albums = db._artistMap[artist].albums
+      let albums = db.albums
+
+      if (this.nav[0].startsWith("artist~")) {
+        const artist = this.currentPage
+        albums = db._artistMap[artist].albums
+      }
 
       const searchTerms = this.searchTerms
       if (!searchTerms) return albums
@@ -692,7 +716,9 @@ var app = new Vue({
       }
     },
     nav(nav) {
-      app.search = ""
+      if (nav[0] !== "~All Songs") {
+        app.search = ""
+      }
 
       app.options.song = null
       app.options.i = null
@@ -748,7 +774,8 @@ setInterval(() => {
 db.onready = () => {
   app.songs = db.songs
   app.artists = db.artists
-  const playlists = app.playlists = db.playlists
+  app.albums = db.albums
+  app.playlists = db.playlists
 
   app.nav = JSON.parse(localStorage.getItem("music-nav")) || app.nav
 

@@ -23,7 +23,7 @@
           <div class="d-flex align-items-center mt-2">
             <div style="width: 33.33%;">
               <button v-if="previousPage" @click="nav.shift()" class="btn btn-link text-decoration-none d-flex align-items-center p-0 mw-100">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16">
+                <svg class="flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16">
                   <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
                 </svg>
     
@@ -114,7 +114,7 @@
       </div>
 
       <reorderable v-model="currentPlaylist.songs" @reorder="reorderPlaylist" :key-path="'id'" v-slot="{ item: song, i }" v-if="view === 'library' && search === '' && nav[0].startsWith('playlist~')"  class="flex-grow-1 scroll-y" style="min-height: 0;">
-        <song-row :song="song" :i="i" :show-artist="true"></song-row>
+        <song-row :song="song" :i="i" show-artist="true" show-album="true"></song-row>
       </reorderable>
       <div v-else class="flex-grow-1 scroll-y">
         <div v-if="view === 'library'">
@@ -147,6 +147,15 @@
                 {{ artist.name }}
               </nav-button>
             </div>
+
+            <div v-if="filteredAlbums.length > 0" class="mt-3">
+              <div class="px-2 py-1 border-bottom opacity-75 small">
+                Albums
+              </div>
+              <nav-button v-for="album in filteredAlbums" :page="`album~${album.name}`" :key="album.name">
+                {{ album.name }}
+              </nav-button>
+            </div>
           </div>
           
           <div v-else>
@@ -166,7 +175,7 @@
             </div>
 
             <!-- <song-list :songs="filteredSongs"></song-list> -->
-            <song-row v-for="(song, i) in filteredSongs" :song="song" :i="i" :show-artist="nav[0] === '~All Songs' || nav[0].startsWith('playlist~')"></song-row>
+            <song-row v-for="(song, i) in filteredSongs" :song="song" :i="i" :show-artist="nav[0] === '~All Songs' || nav[0].startsWith('playlist~') || (nav[0].startsWith('album~') && nav[1] === '~Library') || multiArtistAlbum" :show-album="!nav[0].startsWith('album~')"></song-row>
           </div>
         </div>
 
@@ -249,7 +258,16 @@
                     {{ obj.song.title }}
                     <div class="small text-muted text-truncate">
                       {{ obj.song.artist }}
+                      <span v-if="obj.song.album !== 'unknown'">
+                        &mdash; {{ obj.song.album }}
+                      </span>
                     </div>
+                  </button>
+
+                  <button @click="showSong(obj.song)" class="btn btn-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                      <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                    </svg>
                   </button>
     
                   <button @click="removeFromQueue(i)" class="btn btn-lg p-0 text-danger" :disabled="queueIndex === i">
@@ -266,6 +284,9 @@
               <div class="d-flex justify-content-between align-items-center px-3 mb-2">
                 <div class="flex-grow-1">
                   {{ currentSong ? currentSong.title : "Not Playing" }}
+                  <div class="small text-muted">
+                    {{ currentSong.artist }} &mdash; {{ currentSong.album }}
+                  </div>
                 </div>
                 <div v-if="currentSong" class="ms-1">
                   <button @click="playlist.adding = currentSong" class="playback-button">
@@ -462,8 +483,19 @@
       <div class="d-flex justify-content-between align-items-center">
         <button @click="playNow(song)" class="btn w-100 text-truncate text-start">
           {{ song.title }}
-          <div v-if="showArtist" class="small text-muted text-truncate">
-            {{ song.artist }}
+          <div v-if="showArtist || showAlbum" class="small text-muted text-truncate">
+            <span v-if="(!showArtist || song.artist === 'unknown') && (!showAlbum || song.album === 'unknown')">
+              unknown
+            </span>
+            <span v-else>
+              <span v-if="showArtist">
+                {{ song.artist }}
+              </span>
+              <span v-if="showArtist && showAlbum && song.album !== 'unknown'"> &mdash; </span>
+              <span v-if="showAlbum && song.album !== 'unknown'">
+                {{ song.album }}
+              </span>
+            </span>
           </div>
         </button>
 

@@ -83,6 +83,9 @@
 
       const artistMap = { }
       const artists = this.artists = []
+
+      const albumMap = { }
+      const albums = this.albums = []
       
       this.lastKey = 0
       const songMap = { }
@@ -106,19 +109,29 @@
 
           artist.songs.push(song)
 
-          let album = artist.albumMap[song.album]
+          let album = albumMap[song.album]
           if (!album) {
             album = {
               name: song.album,
+              artist,
               songs: [],
-              artist
+              songMap: { }
             }
+            
+            insertSorted(albums, album, (a, b) => a.name.localeCompare(b.name))
+            albumMap[song.album] = album
+          }
 
+          if (!artist.albumMap[song.album]) {
             insertSorted(artist.albums, album, (a, b) => a.name.localeCompare(b.name))
             artist.albumMap[album.name] = album
           }
 
-          album.songs.push(song)
+          if (!album.songMap[song.id]) {
+            album.songs.push(song)
+            album.songMap[song.id] = song
+          }
+
           if (song.id > this.lastKey) {
             this.lastKey = song.id
           }
@@ -128,6 +141,7 @@
       })
       this._songMap = songMap
       this._artistMap = artistMap
+      this._albumMap = albumMap
 
       const playlistStore = transaction.objectStore('playlists')
       const playlists = await idbPromise(playlistStore.getAll())
@@ -196,6 +210,9 @@
     }
 
     async createPlaylist(name, songs = []) {
+      const existingPlaylist = this._playlistMap[name]
+      if (existingPlaylist) return existingPlaylist
+
       const transaction = this.database.transaction(['playlists'], 'readwrite')
       const playlistStore = transaction.objectStore('playlists')
 
@@ -349,18 +366,28 @@
       }
       insertSorted(artist.songs, this, (a, b) => a.title.localeCompare(b.title))
 
-      let album = artist.albumMap[this.album]
+      let album = db._albumMap[this.album]
       if (!album) {
         album = {
           name: this.album,
+          artist,
           songs: [],
-          artist
+          songMap: { }
         }
+        
+        insertSorted(db.albums, album, (a, b) => a.name.localeCompare(b.name))
+        albumMap[album.name] = album
+      }
 
+      if (!artist.albumMap[album.name]) {
         insertSorted(artist.albums, album, (a, b) => a.name.localeCompare(b.name))
         artist.albumMap[album.name] = album
       }
-      insertSorted(album.songs, this, (a, b) => a.title.localeCompare(b.title))
+
+      if (!album.songMap[this.id]) {
+        insertSorted(album.songs, this, (a, b) => a.title.localeCompare(b.title))
+        album.songMap[this.id] = this
+      }
     }
 
     async setArtist(name, force = false) {
@@ -401,18 +428,28 @@
       } catch (err) { }
       
       
-      let album = artist.albumMap[name]
+      let album = db._albumMap[this.album]
       if (!album) {
         album = {
-          name,
+          name: this.album,
+          artist,
           songs: [],
-          artist
+          songMap: { }
         }
+        
+        insertSorted(db.albums, album, (a, b) => a.name.localeCompare(b.name))
+        albumMap[album.name] = album
+      }
 
+      if (!artist.albumMap[album.name]) {
         insertSorted(artist.albums, album, (a, b) => a.name.localeCompare(b.name))
         artist.albumMap[album.name] = album
       }
-      insertSorted(album.songs, this, (a, b) => a.title.localeCompare(b.title))
+
+      if (!album.songMap[this.id]) {
+        insertSorted(album.songs, this, (a, b) => a.title.localeCompare(b.title))
+        album.songMap[this.id] = this
+      }
 
       this.album = name
     }

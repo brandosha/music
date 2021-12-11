@@ -551,8 +551,7 @@
       if (this.album === "unknown" || this.artist === "unknown") return null
 
       const album = db._albumMap[this.album]
-      if (album.art) return album.art
-      if (this._albumArtRequest) return this._albumArtRequest
+      if (album._art) return album._art
 
       let query = this.album
       const { artists } = this
@@ -562,16 +561,12 @@
         query += ` artistname:"${this.artist}"`
       }
 
-      this._albumArtRequest = fetch(`https://musicbrainz.org/ws/2/release/?fmt=json&limit=1&query=` + encodeURIComponent(query))
+      album._art = fetch(`https://musicbrainz.org/ws/2/release/?fmt=json&limit=1&query=` + encodeURIComponent(query))
       .then(res => res.json())
       .then(json => {
         if (!json.releases || !json.releases[0]) return null
         const obj = json.releases[0]
-
-        this._albumArtRequest = undefined
-
-        album.art = `https://coverartarchive.org/release/${obj.id}/front-500`
-        return album.art
+        return `https://coverartarchive.org/release/${obj.id}/front-500`
       })
     }
   }

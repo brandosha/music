@@ -546,6 +546,34 @@
 
       this.playlists.delete(name)
     }
+
+    artUrl() {
+      if (this.album === "unknown" || this.artist === "unknown") return null
+
+      const album = db._albumMap[this.album]
+      if (album.art) return album.art
+      if (this._albumArtRequest) return this._albumArtRequest
+
+      let query = this.album
+      const { artists } = this
+      if (artists.length > 1) {
+        query += ` artistname:"${artists[1]}"`
+      } else {
+        query += ` artistname:"${this.artist}"`
+      }
+
+      this._albumArtRequest = fetch(`https://musicbrainz.org/ws/2/release/?fmt=json&limit=1&query=` + encodeURIComponent(query))
+      .then(res => res.json())
+      .then(json => {
+        if (!json.releases || !json.releases[0]) return null
+        const obj = json.releases[0]
+
+        this._albumArtRequest = undefined
+
+        album.art = `https://coverartarchive.org/release/${obj.id}/front-500`
+        return album.art
+      })
+    }
   }
 
   function insertSorted(arr, value, compare) {
@@ -586,9 +614,9 @@
 
     arr.splice(i, 0, value)
   }
-}
 
-function musicBrainzSearch(object, query) {
-  return fetch(`https://musicbrainz.org/ws/2/${object}/?fmt=json&limit=1&query=` + encodeURIComponent(query))
-    .then(res => res.json())
+  function musicBrainzSearch(object, query) {
+    return fetch(`https://musicbrainz.org/ws/2/${object}/?fmt=json&limit=1&query=` + encodeURIComponent(query))
+      .then(res => res.json())
+  }
 }

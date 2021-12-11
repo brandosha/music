@@ -105,6 +105,9 @@ var app = new Vue({
       }
 
       player.onended = () => this.playNext()
+
+      // Fetch and cache the album art
+      song.artUrl()
     },
     async playNow(song) {
       const alert = this.alert
@@ -175,7 +178,15 @@ var app = new Vue({
           })
           if (song.artist !== "unknown") metadata.artist = item.song.artist
           if (song.album !== "unknown") metadata.album = song.album
-          if (albumArt[song.id]) metadata.artwork = [{ src: albumArt[song.id] }]
+
+          const art = song.artUrl()
+          if (art) {
+            if (art.then) {
+              art.then(url => metadata.artwork = [{ src: url }])
+            } else {
+              metadata.artwork = [{ src: art }]
+            }
+          }
 
           mediaSession.metadata = metadata
         }
@@ -701,6 +712,9 @@ db.onready = () => {
       player.onended = () => app.playNext()
 
       queue.push({ song, player, key: app.nextQueueItemKey++ })
+
+      // Fetch and cache the album art
+      song.artUrl()
     })
 
     app.queue = queue
@@ -709,29 +723,6 @@ db.onready = () => {
 
     app.playAtIndex(queueData.index)
   }
-
-  db.songs.forEach(song => {
-    if (song.artist === "unknown" || song.album === "unknown") return
-
-    let query = song.album
-    const { artists } = song
-    if (artists.length > 1) {
-      query += ` artistname:"${artists[1]}"`
-    } else {
-      query += ` artistname:"${song.artist}"`
-    }
-
-    musicBrainzSearch("release", song.album + ` artist:"${song.artist}"`).then(json => {
-      const obj = json['releases'][0]
-
-      albumArt[song.id] = `https://coverartarchive.org/release/${obj.id}/front-500`
-      if (app.currentSong.id === song.id && "mediaSession" in navigator) {
-        navigator.mediaSession.metadata.artwork = [{
-          src: albumArt[song.id]
-        }]
-      }
-    })
-  })
 }
 
 // https://stackoverflow.com/a/2450976

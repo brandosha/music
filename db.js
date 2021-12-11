@@ -376,7 +376,7 @@
         }
         
         insertSorted(db.albums, album, (a, b) => a.name.localeCompare(b.name))
-        albumMap[album.name] = album
+        db._albumMap[album.name] = album
       }
 
       if (!artist.albumMap[album.name]) {
@@ -586,4 +586,9 @@
 
     arr.splice(i, 0, value)
   }
+}
+
+function musicBrainzSearch(object, query) {
+  return fetch(`https://musicbrainz.org/ws/2/${object}/?fmt=json&limit=1&query=` + encodeURIComponent(query))
+    .then(res => res.json())
 }

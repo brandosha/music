@@ -158,7 +158,10 @@ var app = new Vue({
 
         this.player = item.player
         item.player.load()
-        item.player.play()
+        try {
+          item.player.play()
+        } catch (err) { /* Ignore the NotAllowedError */ }
+        
         
         this.queueIndex = index
         this.currentSong = item.song
@@ -172,6 +175,7 @@ var app = new Vue({
           })
           if (song.artist !== "unknown") metadata.artist = item.song.artist
           if (song.album !== "unknown") metadata.album = song.album
+          if (albumArt[song.id]) metadata.artwork = [{ src: albumArt[song.id] }]
 
           mediaSession.metadata = metadata
         }
@@ -675,6 +679,7 @@ setInterval(() => {
   }
 }, 15)
 
+const albumArt = { }
 db.onready = () => {
   app.songs = db.songs
   app.artists = db.artists
@@ -685,25 +690,48 @@ db.onready = () => {
 
   const queueData = JSON.parse(localStorage.getItem("music-queue"))
   if (queueData) {
-    app.queue = queueData.queue.map((id, index) => {
+    const queue = []
+
+    queueData.queue.forEach((id, index) => {
       const song = db.getSong(id)
+      if (!song) return
 
       const player = new Audio(song.fileUrl())
       player.preload = "none"
       player.onended = () => app.playNext()
 
-      if (index === queueData.index) {
-        app.currentSong = song
-        app.player = player
-      }
-
-      return { song, player, key: app.nextQueueItemKey++ }
+      queue.push({ song, player, key: app.nextQueueItemKey++ })
     })
 
-    app.queueIndex = queueData.index
+    app.queue = queue
     app.willLoop = queueData.willLoop
     app.willShuffle = queueData.willShuffle
+
+    app.playAtIndex(app.queueIndex)
   }
+
+  db.songs.forEach(song => {
+    if (song.artist === "unknown" || song.album === "unknown") return
+
+    let query = song.album
+    const { artists } = song
+    if (artists.length > 1) {
+      query += ` artistname:"${artists[1]}"`
+    } else {
+      query += ` artistname:"${song.artist}"`
+    }
+
+    musicBrainzSearch("release", song.album + ` artist:"${song.artist}"`).then(json => {
+      const obj = json['releases'][0]
+
+      albumArt[song.id] = `https://coverartarchive.org/release/${obj.id}/front-500`
+      if (app.currentSong.id === song.id && "mediaSession" in navigator) {
+        navigator.mediaSession.metadata.artwork = [{
+          src: albumArt[song.id]
+        }]
+      }
+    })
+  })
 }
 
 // https://stackoverflow.com/a/2450976

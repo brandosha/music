@@ -160,7 +160,6 @@ var app = new Vue({
         item.player.load()
         item.player.play().catch(err => { /* Ignore the NotAllowedError */ })
         
-        
         this.queueIndex = index
         this.currentSong = item.song
 
@@ -371,11 +370,6 @@ var app = new Vue({
       const minutes = Math.floor(seconds / 60)
       const secondsLeft = seconds % 60
       return `${minutes}:${secondsLeft < 10 ? "0" : ""}${secondsLeft}`
-    },
-
-    showSong(song) {
-      this.nav = ["album~" + song.album, "artist~" + song.artist, "~Library"]
-      this.showNowPlaying = false
     },
 
     navigateTo(page) {

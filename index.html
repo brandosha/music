@@ -22,7 +22,7 @@
 
           <div class="d-flex align-items-center mt-2">
             <div style="width: 33.33%;">
-              <button v-if="previousPage" @click="nav.shift()" class="btn btn-link text-decoration-none d-flex align-items-center p-0 mw-100">
+              <button v-if="previousPage" @click="nav.shift()" class="btn btn-link d-flex align-items-center p-0 mw-100">
                 <svg class="flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16">
                   <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
                 </svg>
@@ -125,7 +125,7 @@
                 {{ playlist.name }}
               </nav-button>
 
-              <button v-if="!search" @click="createPlaylist" class="btn btn-link text-decoration-none d-flex align-items-center">
+              <button v-if="!search" @click="createPlaylist" class="btn btn-link d-flex align-items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus me-1" viewBox="0 0 16 16">
                   <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
                 </svg>
@@ -178,7 +178,7 @@
         <div v-if="showNowPlaying" class="full-page-modal">
           <div class="d-flex flex-column justify-content-between h-100 p-3 pt-0 bg-gray">
             <div class="d-flex justify-content-end">
-              <button @click="showNowPlaying = false" class="btn btn-link w-100 pb-3">
+              <button @click="showNowPlaying = false" class="btn btn-link text-center w-100 pb-3">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
                   <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
                 </svg>
@@ -372,7 +372,7 @@
           </div>
           <div class="col">
             <div v-for="artist in infoView.song.artists">
-              <button @click="navigateTo('artist~' + artist)" class="btn btn-link text-decoration-none pt-0">
+              <button @click="navigateTo('artist~' + artist)" class="btn btn-link pt-0">
                 {{ artist }}
               </button>
             </div>
@@ -384,7 +384,7 @@
             Album
           </div>
           <div class="col">
-            <button @click="navigateTo('album~' + infoView.song.album)" class="btn btn-link text-decoration-none pt-0">
+            <button @click="navigateTo('album~' + infoView.song.album)" class="btn btn-link pt-0">
               {{ infoView.song.album }}
             </button>
           </div>

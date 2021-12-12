@@ -716,7 +716,7 @@ db.onready = () => {
     })
 
     app.queue = queue
-    app.willLoop = queueData.willLoop
+    app.willLoop = queueData.loop
     app.willShuffle = queueData.willShuffle
 
     app.playAtIndex(queueData.index)

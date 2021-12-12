@@ -568,14 +568,12 @@
         const obj = json.releases[0]
 
         return fetch(`https://coverartarchive.org/release/${obj.id}`)
-        return `https://coverartarchive.org/release/${obj.id}/front-500`
       })
       .then(res => res.json())
       .then(json => {
         console.log(json)
 
         return json.images[0].image
-        return null
       })
       .catch(err => {
         console.error(err)

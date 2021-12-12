@@ -13,7 +13,7 @@
 <body class="overflow-hidden">
   <div id="app">
     <div class="d-flex flex-column h-100">
-      <div class="p-2" style="background-color: #88888820;">
+      <div class="p-2 bg-gray">
         <div v-if="view === 'library'">
           <input @change="upload" type="file" multiple class="d-none">
           <button class="btn btn-sm btn-secondary w-100" onclick="this.previousElementSibling.click()">
@@ -38,8 +38,8 @@
             </h5>
 
             <div class="d-flex justify-content-end" style="width: 33.33%;">
-              <button @click="playlistEditor.name = currentPage" v-if="nav[0].startsWith('playlist~')" class="btn btn-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+              <button @click="playlistEditor.name = currentPage" v-if="nav[0].startsWith('playlist~')" class="btn btn-link py-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
                   <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
                   <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
                 </svg>
@@ -104,7 +104,10 @@
         </div>
       </div>
 
-      <reorderable v-model="currentPlaylist.songs" @reorder="reorderPlaylist" :key-path="'id'" v-slot="{ item: song, i }" v-if="view === 'library' && search === '' && nav[0].startsWith('playlist~')"  class="flex-grow-1 scroll-y" style="min-height: 0;">
+      <div v-if="view === 'library' && nav[0].startsWith('playlist~') && search === ''" class="text-muted small bg-gray px-2 pb-1">
+        {{ filteredSongs.length }} Song{{ filteredSongs.length !== 1 ? 's' : '' }}
+      </div>
+      <reorderable v-if="view === 'library' && nav[0].startsWith('playlist~') && search === ''" v-model="currentPlaylist.songs" @reorder="reorderPlaylist" :key-path="'id'" v-slot="{ item: song, i }" class="flex-grow-1 scroll-y" style="min-height: 0;">
         <song-row :song="song" :i="i" show-artist="true" show-album="true"></song-row>
       </reorderable>
       <div v-else class="flex-grow-1 scroll-y">
@@ -150,7 +153,7 @@
           </div>
           
           <div v-else>
-            <div v-if="nav[0].startsWith('artist~')">
+            <div v-if="nav[0].startsWith('artist~')" class="mb-3">
               <div v-if="filteredAlbums.length > 0">
                 <div class="px-2 py-1 border-bottom opacity-75 small">
                   Albums
@@ -159,10 +162,10 @@
                   {{ album.name }}
                 </nav-button>
               </div>
+            </div>
 
-              <div class="px-2 py-1 border-bottom opacity-75 small mt-3">
-                Songs
-              </div>
+            <div class="px-2 py-1 border-bottom opacity-75 small">
+              {{ filteredSongs.length }} Song{{ filteredSongs.length !== 1 ? 's' : '' }}
             </div>
 
             <!-- <song-list :songs="filteredSongs"></song-list> -->
@@ -173,7 +176,7 @@
 
       <transition name="queue">
         <div v-if="showNowPlaying" class="full-page-modal">
-          <div class="d-flex flex-column justify-content-between h-100 p-3 pt-0" style="background-color: #88888820;">
+          <div class="d-flex flex-column justify-content-between h-100 p-3 pt-0 bg-gray">
             <div class="d-flex justify-content-end">
               <button @click="showNowPlaying = false" class="btn btn-link w-100 pb-3">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
@@ -318,7 +321,7 @@
         </div>
       </transition>
 
-      <div v-if="currentSong || queue.length > 0" style="background-color: #88888820;" class="p-2 pb-0">
+      <div v-if="currentSong || queue.length > 0" class="p-2 pb-0 bg-gray">
         <button @click="showNowPlaying = true" class="btn d-flex justify-content-between w-100 px-3 py-0">
           <div class="text-truncate">
             {{ currentSong ? currentSong.title : "Not Playing" }}

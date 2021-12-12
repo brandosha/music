@@ -181,7 +181,9 @@ var app = new Vue({
 
           const art = song.artUrl()
           if (art) {
-            art.then(url => metadata.artwork = [{ src: url }])
+            art.then(url => {
+              if (url) metadata.artwork = [{ src: url }]
+            })
           }
 
           mediaSession.metadata = metadata

@@ -243,9 +243,9 @@
                     </div>
                   </button>
 
-                  <button @click="showSong(obj.song)" class="btn btn-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
-                      <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                  <button @click="infoView.song = obj.song" class="btn btn-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+                      <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
                     </svg>
                   </button>
     
@@ -357,6 +357,64 @@
             </svg>
           </button>
         </div>
+      </div>
+    </div>
+
+    <div v-if="infoView.song" class="full-page-modal d-flex flex-column justify-content-center p-4">
+      <h5>
+        {{ infoView.song.title }}
+      </h5>
+
+      <div class="container-fluid">
+        <div class="row mt-3">
+          <div class="fw-bold col-3">
+            Artist{{ infoView.song.artists > 1 ? 's' : '' }}
+          </div>
+          <div class="col">
+            <div v-for="artist in infoView.song.artists">
+              <button @click="navigateTo('artist~' + artist)" class="btn btn-link text-decoration-none pt-0">
+                {{ artist }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="fw-bold col-3">
+            Album
+          </div>
+          <div class="col">
+            <button @click="navigateTo('album~' + infoView.song.album)" class="btn btn-link text-decoration-none pt-0">
+              {{ infoView.song.album }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="infoView.song.playlists.size > 0" class="row mt-3">
+          <div class="fw-bold col-3">
+            Playlists
+          </div>
+          <div class="col">
+            <div v-for="[playlist] in Array.from(infoView.song.playlists)" class="d-flex">
+              <button @click="navigateTo('playlist~' + playlist)" class="btn btn-link text-decoration-none pt-0">
+                {{ playlist }}
+              </button>
+
+              <button @click="infoView.song.removeFromPlaylist(playlist)" class="btn btn-link p-0 text-danger ms-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder-minus" viewBox="0 0 16 16">
+                  <path d="m.5 3 .04.87a1.99 1.99 0 0 0-.342 1.311l.637 7A2 2 0 0 0 2.826 14H9v-1H2.826a1 1 0 0 1-.995-.91l-.637-7A1 1 0 0 1 2.19 4h11.62a1 1 0 0 1 .996 1.09L14.54 8h1.005l.256-2.819A2 2 0 0 0 13.81 3H9.828a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 6.172 1H2.5a2 2 0 0 0-2 2zm5.672-1a1 1 0 0 1 .707.293L7.586 3H2.19c-.24 0-.47.042-.683.12L1.5 2.98a1 1 0 0 1 1-.98h3.672z"/>
+                  <path d="M11 11.5a.5.5 0 0 1 .5-.5h4a.5.5 0 1 1 0 1h-4a.5.5 0 0 1-.5-.5z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end mt-3">
+        <button @click="infoView.song = null" class="btn btn-primary">
+          Done
+        </button>
       </div>
     </div>
 
@@ -479,6 +537,14 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder-plus" viewBox="0 0 16 16">
               <path d="m.5 3 .04.87a1.99 1.99 0 0 0-.342 1.311l.637 7A2 2 0 0 0 2.826 14H9v-1H2.826a1 1 0 0 1-.995-.91l-.637-7A1 1 0 0 1 2.19 4h11.62a1 1 0 0 1 .996 1.09L14.54 8h1.005l.256-2.819A2 2 0 0 0 13.81 3H9.828a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 6.172 1H2.5a2 2 0 0 0-2 2zm5.672-1a1 1 0 0 1 .707.293L7.586 3H2.19c-.24 0-.47.042-.683.12L1.5 2.98a1 1 0 0 1 1-.98h3.672z"/>
               <path d="M13.5 10a.5.5 0 0 1 .5.5V12h1.5a.5.5 0 1 1 0 1H14v1.5a.5.5 0 1 1-1 0V13h-1.5a.5.5 0 0 1 0-1H13v-1.5a.5.5 0 0 1 .5-.5z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="ms-auto">
+          <button @click="infoView.song = song" class="playback-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
             </svg>
           </button>
         </div>

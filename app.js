@@ -33,11 +33,8 @@ var app = new Vue({
       adding: null,
       name: ""
     },
-    songEditor: {
-      editing: null,
-      title: "",
-      artist: "",
-      album: ""
+    infoView: {
+      song: null
     },
     alert: {
       show: false,
@@ -161,9 +158,7 @@ var app = new Vue({
 
         this.player = item.player
         item.player.load()
-        try {
-          item.player.play()
-        } catch (err) { /* Ignore the NotAllowedError */ }
+        item.player.play().catch(err => { /* Ignore the NotAllowedError */ })
         
         
         this.queueIndex = index
@@ -381,6 +376,17 @@ var app = new Vue({
     showSong(song) {
       this.nav = ["album~" + song.album, "artist~" + song.artist, "~Library"]
       this.showNowPlaying = false
+    },
+
+    navigateTo(page) {
+      if (Array.isArray(page)) {
+        this.nav = page.concat("~Library")
+      } else {
+        this.nav = [page, "~Library"]
+      }
+
+      this.showNowPlaying = false
+      this.infoView.song = null
     }
   },
   computed: {

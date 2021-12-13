@@ -283,10 +283,8 @@
         const song = songs[id]
         if (!song.artist) song.artist = "unknown"
         if (!song.album) song.album = "unknown"
-        console.log(song)
 
         const artist = this._artistMap[song.artist]
-        console.log(artist?.songs)
         if (!artist) continue
 
         const dbsong = retrieveSorted(artist.songs, song, (a, b, i, arr) => {
@@ -308,7 +306,6 @@
 
         dbsongs[id] = dbsong
       }
-      console.log(db, dbsongs, playlists)
 
       playlists.forEach(playlist => {
         for (let i = playlist.songs.length - 1; i > 0; i--) {

@@ -278,7 +278,6 @@ var app = new Vue({
         }
 
         if (file.name.endsWith("playlists.json")) {
-          console.log(file)
           playlistsJson = file
         }
       }
@@ -396,7 +395,6 @@ var app = new Vue({
           songs,
           playlists: jsonPlaylists
         }
-        console.log(json)
 
         const jsonFile = new Blob([JSON.stringify(json)])
         const url = URL.createObjectURL(jsonFile)

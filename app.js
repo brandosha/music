@@ -4,6 +4,7 @@ var app = new Vue({
     view: "library",
     showNowPlaying: false,
     nav: ["~All Songs", "~Library"],
+    navSearches: ["", ""],
 
     songs: [],
     artists: [],
@@ -17,7 +18,7 @@ var app = new Vue({
     songProgress: 0,
     paused: false,
 
-    search: "",
+    // search: "",
     willShuffle: false,
     willLoop: false,
 
@@ -436,8 +437,10 @@ var app = new Vue({
 
     navigateTo(page) {
       if (Array.isArray(page)) {
+        this.navSearches = Array.from({ length: page.length + 1 }, () => "")
         this.nav = page.concat("~Library")
       } else {
+        this.navSearches = ["", ""]
         this.nav = [page, "~Library"]
       }
 
@@ -469,6 +472,14 @@ var app = new Vue({
       return false
     },
 
+    search: {
+      get() {
+        return this.navSearches[0]
+      },
+      set(search) {
+        Vue.set(this.navSearches, 0, search)
+      }
+    },
     searchTerms() {
       const search = this.search.trim().toLowerCase()
       if (search === "") {
@@ -695,14 +706,25 @@ var app = new Vue({
       }
     },
     nav(nav) {
-      if (nav[0] !== "~All Songs") {
-        app.search = ""
-      }
+      // if (nav[0] !== "~All Songs") {
+      //   app.search = ""
+      // }
 
       app.options.song = null
       app.options.i = null
 
       localStorage.setItem("music-nav", JSON.stringify(nav))
+
+      while (this.navSearches.length < nav.length) {
+        if (nav[0] === "~All Songs") {
+          this.navSearches.unshift(app.search)
+        } else {
+          this.navSearches.unshift('')
+        }
+      }
+      while (this.navSearches.length > nav.length) {
+        this.navSearches.shift()
+      }
     },
 
     search() {

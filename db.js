@@ -389,6 +389,10 @@
         if (previousAlbum.songs.length === 0) {
           previousArtist.albums.splice(previousArtist.albums.indexOf(previousAlbum), 1)
           previousArtist.albumMap[this.album] = undefined
+          db._albumMap[this.album] = undefined
+
+          const index = db.albums.indexOf(previousAlbum)
+          if (index > -1) db.albums.splice(index, 1)
         }
         if (previousArtist.songs.length === 0) {
           db.artists.splice(db.artists.indexOf(previousArtist), 1)

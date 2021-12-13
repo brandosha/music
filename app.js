@@ -330,19 +330,26 @@ var app = new Vue({
       if (name) {
         await db.createPlaylist(name)
         this.nav = ["playlist~" + name, "~Library"]
+        this.playlistExport.selected.push(name)
       }
     },
     addSelectedToPlaylist() {
-      const song = this.playlist.adding
-      if (Array.isArray(this.playlist.adding)) {
+      const playlist = this.playlist
+      const { name } = playlist
+
+      const song = playlist.adding
+
+      if (!db._playlistMap[name]) this.playlistExport.selected.push(name)
+
+      if (Array.isArray(playlist.adding)) {
         const songs = song
-        songs.forEach(song => song.addToPlaylist(this.playlist.name))
+        songs.forEach(song => song.addToPlaylist(name))
       } else {
-        song.addToPlaylist(this.playlist.name)
+        song.addToPlaylist(name)
       }
 
-      this.playlist.adding = null
-      this.playlist.name = ""
+      playlist.adding = null
+      playlist.name = ""
     },
     removePlaylist() {
       if (confirm(`Are you sure you want to delete the playlist '${this.currentPage}'?`)) {
@@ -363,6 +370,7 @@ var app = new Vue({
         Vue.set(this.nav, 0, "playlist~" + name)
 
         this.playlistEditor.name = null
+        this.playlistExport.selected.push(name)
       }
     },
     reorderPlaylist() {
@@ -375,7 +383,7 @@ var app = new Vue({
       const jsonPlaylists = []
       
       playlists.forEach(playlist => {
-        if (playlist.songs.length === 0) return
+        if (!playlist || playlist.songs.length === 0) return
 
         jsonPlaylists.push({
           name: playlist.name,
@@ -403,6 +411,7 @@ var app = new Vue({
         const link = document.getElementById("playlists-export-link")
         link.href = url
         link.click()
+        this.playlistExport.showing = false
 
         setTimeout(() => {
           link.href = ""

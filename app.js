@@ -33,6 +33,11 @@ var app = new Vue({
       adding: null,
       name: ""
     },
+    playlistExport: {
+      showing: false,
+      selected: []
+    },
+
     infoView: {
       song: null
     },
@@ -263,17 +268,33 @@ var app = new Vue({
     async upload(e) {
       const files = e.target.files
 
+      let playlistsJson
+
       const promises = []
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         if (file.type.includes("audio")) {
           promises.push(db.add(files[i]))
         }
+
+        if (file.name.endsWith("playlists.json")) {
+          console.log(file)
+          playlistsJson = file
+        }
       }
 
+      const songs = await Promise.all(promises)
       if (this.nav[0].startsWith("playlist~")) {
-        const songs = await Promise.all(promises)
         songs.forEach(song => song.addToPlaylist(this.currentPage))
+      }
+
+      if (playlistsJson) {
+        try {
+          playlistsJson = await playlistsJson.text()
+          db.importPlaylists(playlistsJson)
+        } catch (err) {
+          console.error(err)
+        }
       }
     },
     async remove(song, requestConfirmation = true) {
@@ -346,6 +367,49 @@ var app = new Vue({
     },
     reorderPlaylist() {
       db.savePlaylist(this.currentPage)
+    },
+    exportSelectedPlaylists() {
+      const playlists = this.playlistExport.selected.map(name => db._playlistMap[name])
+
+      const songs = { }
+      const jsonPlaylists = []
+      
+      playlists.forEach(playlist => {
+        if (playlist.songs.length === 0) return
+
+        jsonPlaylists.push({
+          name: playlist.name,
+          songs: playlist.songs.map(song => {
+            const jsonSong = songs[song.id] = {
+              title: song.title
+            }
+            if (song.artist !== "unknown") jsonSong.artist = song.artist
+            if (song.album !== "unknown") jsonSong.album = song.album
+
+            return song.id
+          })
+        })
+      })
+
+      if (jsonPlaylists.length > 0) {
+        const json = {
+          songs,
+          playlists: jsonPlaylists
+        }
+        console.log(json)
+
+        const jsonFile = new Blob([JSON.stringify(json)])
+        const url = URL.createObjectURL(jsonFile)
+  
+        const link = document.getElementById("playlists-export-link")
+        link.href = url
+        link.click()
+
+        setTimeout(() => {
+          link.href = ""
+          URL.revokeObjectURL(url)
+        }, 10000)
+      }
     },
 
     toggleOptions(song, i) {
@@ -694,6 +758,7 @@ db.onready = () => {
   app.artists = db.artists
   app.albums = db.albums
   app.playlists = db.playlists
+  app.playlistExport.selected = db.playlists.map(p => p.name)
 
   app.nav = JSON.parse(localStorage.getItem("music-nav")) || app.nav
 

@@ -273,6 +273,54 @@
       )
     }
 
+    async importPlaylists(json) {
+      if (typeof json === "string") json = JSON.parse(json)
+
+      const { songs, playlists } = json
+
+      const dbsongs = { }
+      for (const id in songs) {
+        const song = songs[id]
+        if (!song.artist) song.artist = "unknown"
+        if (!song.album) song.album = "unknown"
+        console.log(song)
+
+        const artist = this._artistMap[song.artist]
+        console.log(artist?.songs)
+        if (!artist) continue
+
+        const dbsong = retrieveSorted(artist.songs, song, (a, b, i, arr) => {
+          const comparison = a.title.localeCompare(b.title)
+          if (comparison !== 0) return comparison
+          if (a.album === b.album) return 0
+
+          let offset = 1
+          while (true) {
+            const val = arr[i + offset]
+
+            if (!val || val.title !== song.title) return 1
+            if (val.album === song.album) return -1
+
+            offset += 1
+          }
+        })
+        if (!dbsong) continue
+
+        dbsongs[id] = dbsong
+      }
+      console.log(db, dbsongs, playlists)
+
+      playlists.forEach(playlist => {
+        for (let i = playlist.songs.length - 1; i > 0; i--) {
+          const id = playlist.songs[i]
+          const song = dbsongs[id]
+          if (song) {
+            song.addToPlaylist(playlist.name)
+          }
+        }
+      })
+    }
+
     async clear() {
       const transaction = this.database.transaction(['songs', 'playlists'], 'readwrite')
       const songStore = transaction.objectStore('songs')
@@ -475,28 +523,7 @@
       })
       await Promise.all(promises)
 
-      try {
-        let previousArtist = db._artistMap[this.artist]
-        const artistSongIndex = previousArtist.songs.indexOf(this)
-        if (artistSongIndex > -1) {
-          previousArtist.songs.splice(artistSongIndex, 1)
-        }
-
-        let previousAlbum = previousArtist.albumMap[this.album]
-        const albumSongIndex = previousAlbum.songs.indexOf(this)
-        if (albumSongIndex > -1) {
-          previousAlbum.songs.splice(albumSongIndex, 1)
-        }
-
-        if (previousAlbum.songs.length === 0) {
-          previousArtist.albums.splice(previousArtist.albums.indexOf(previousAlbum), 1)
-          previousArtist.albumMap[this.album] = undefined
-        }
-        if (previousArtist.songs.length === 0) {
-          db.artists.splice(db.artists.indexOf(previousArtist), 1)
-          db._artistMap[this.artist] = undefined
-        }
-      } catch (err) { }
+      this.artists.forEach(name => this._removeFromArtist(name))
 
       await db.removeSong(this.id)
     }
@@ -571,12 +598,9 @@
       })
       .then(res => res.json())
       .then(json => {
-        console.log(json)
-
         return json.images[0].image
       })
       .catch(err => {
-        console.error(err)
         return null
       })
     }
@@ -619,6 +643,32 @@
     }
 
     arr.splice(i, 0, value)
+  }
+
+  function retrieveSorted(arr, value, compare) {
+    if (arr.length === 1) {
+      const comparison = compare(arr[0], value, 0, arr)
+      if (comparison === 0) return arr[0]
+    }
+
+    let lower = 0
+    let upper = arr.length - 1
+
+    while (upper >= lower) {
+      const i = Math.floor((lower + upper) / 2)
+      const val = arr[i]
+
+      const comparison = compare(val, value, i, arr)
+      if (comparison < 0) {
+        lower = i + 1
+      } else if (comparison > 0) {
+        upper = i - 1
+      } else {
+        return val
+      }
+    }
+
+    return null
   }
 
   function musicBrainzSearch(object, query) {

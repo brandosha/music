@@ -22,15 +22,6 @@ Vue.component("song-row", {
   template: document.getElementById("song-row").innerHTML
 })
 
-Vue.component("song-list", {
-  props: {
-    songs: {
-      type: Array
-    }
-  },
-  template: document.getElementById("song-list").innerHTML
-})
-
 Vue.component("reorderable", {
   props: {
     value: {

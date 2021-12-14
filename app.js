@@ -795,13 +795,32 @@ db.onready = () => {
   if (queueData) {
     const queue = []
 
-    queueData.queue.forEach((id, index) => {
+    let index = -1
+    queueData.queue.forEach(id => {
       const song = db.getSong(id)
-      if (!song) return
+      if (!song) {
+        queueData.index -= 1
+        return
+      } else {
+        index += 1
+      }
 
       const player = new Audio(song.fileUrl())
       player.preload = "none"
       player.onended = () => app.playNext()
+
+      if (index === queueData.index) {
+        player.preload = "metadata"
+        player.oncanplay = () => {
+          app.$forceUpdate()
+          
+          player.preload = "none"
+          player.oncanplay = undefined
+        }
+        player.onerror = () => {
+          player.preload = "none"
+        }
+      }
 
       queue.push({ song, player, key: app.nextQueueItemKey++ })
 

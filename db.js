@@ -601,7 +601,7 @@
       .then(json => {
         let url = json.images[0].image
         if (url.startsWith("http:")) {
-          url.replace("http:", "https:")
+          url = url.replace("http:", "https:")
         }
         return url
       })

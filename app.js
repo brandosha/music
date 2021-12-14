@@ -94,6 +94,7 @@ var app = new Vue({
       }
 
       const player = new Audio(song.fileUrl())
+      player.setAttribute("x-webkit-airplay", "allow")
       player.preload = "none"
 
       const queueObj = { song, player, key: this.nextQueueItemKey++ }
@@ -806,6 +807,7 @@ db.onready = () => {
       }
 
       const player = new Audio(song.fileUrl())
+      player.setAttribute("x-webkit-airplay", "allow")
       player.preload = "none"
       player.onended = () => app.playNext()
 

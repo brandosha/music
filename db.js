@@ -599,7 +599,11 @@
       })
       .then(res => res.json())
       .then(json => {
-        return json.images[0].image
+        let url = json.images[0].image
+        if (url.startsWith("http:")) {
+          url.replace("http:", "https:")
+        }
+        return url
       })
       .catch(err => {
         return null

@@ -18,6 +18,8 @@ var app = new Vue({
     songProgress: 0,
     paused: false,
 
+    selectedSongs: [],
+
     // search: "",
     willShuffle: false,
     willLoop: false,
@@ -54,7 +56,7 @@ var app = new Vue({
     player: null
   },
   methods: {
-    async addToQueue(song, next = false) {
+    addToQueue(song, next = false) {
       this.options.song = null
       this.options.i = null
 
@@ -73,10 +75,11 @@ var app = new Vue({
         if (songs.length === 1) {
           song = songs[0]
         } else if (songs.length > 0) {
-          if (this.willShuffle) {
-            shuffle(songs)
-          }
           if (next) {
+            if (this.willShuffle) {
+              shuffle(songs)
+            }
+
             songs = songs.reverse()
             if (!this.currentSong) {
               songs.unshift(songs.pop())
@@ -85,7 +88,7 @@ var app = new Vue({
 
           alert.ignore = true
           for (const song of songs) {
-            await this.addToQueue(song, next)
+            this.addToQueue(song, next)
           }
           alert.ignore = false
 
@@ -100,6 +103,9 @@ var app = new Vue({
       const queueObj = { song, player, key: this.nextQueueItemKey++ }
       if (next) {
         this.queue.splice(this.queueIndex + 1, 0, queueObj)
+      } else if (this.willShuffle) {
+        const index = Math.floor(Math.random() * (this.queue.length - this.queueIndex)) + this.queueIndex + 1
+        this.queue.splice(index, 0, queueObj)
       } else {
         this.queue.push(queueObj)
       }
@@ -113,12 +119,12 @@ var app = new Vue({
       // Fetch and cache the album art
       song.artUrl()
     },
-    async playNow(song) {
+    playNow(song) {
       const alert = this.alert
       const playingNow = this.currentSong
 
       alert.ignore = true
-      await this.addToQueue(song, true)
+      this.addToQueue(song, true)
       alert.ignore = false
 
       if (playingNow) this.playNext()
@@ -638,6 +644,14 @@ var app = new Vue({
 
         return true
       })
+    },
+
+    currentSongs() {
+      if (this.selectedSongs.length > 0) {
+        return this.selectedSongs
+      } else {
+        return this.filteredSongs
+      }
     },
 
     currentPage() {

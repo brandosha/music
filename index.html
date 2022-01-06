@@ -65,7 +65,7 @@
 
             <div v-if="filteredSongs.length > 0 && nav[0] !== '~Library'" class="d-flex mt-2">
               <div class="me-auto">
-                <button @click="remove(filteredSongs)" class="playback-button text-danger">
+                <button @click="remove(currentSongs)" class="playback-button text-danger">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
                     <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
                   </svg>
@@ -73,7 +73,7 @@
               </div>
 
               <div class="me-2">
-                <button @click="playlist.adding = filteredSongs" class="playback-button">
+                <button @click="playlist.adding = currentSongs" class="playback-button">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder-plus" viewBox="0 0 16 16">
                     <path d="m.5 3 .04.87a1.99 1.99 0 0 0-.342 1.311l.637 7A2 2 0 0 0 2.826 14H9v-1H2.826a1 1 0 0 1-.995-.91l-.637-7A1 1 0 0 1 2.19 4h11.62a1 1 0 0 1 .996 1.09L14.54 8h1.005l.256-2.819A2 2 0 0 0 13.81 3H9.828a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 6.172 1H2.5a2 2 0 0 0-2 2zm5.672-1a1 1 0 0 1 .707.293L7.586 3H2.19c-.24 0-.47.042-.683.12L1.5 2.98a1 1 0 0 1 1-.98h3.672z"/>
                     <path d="M13.5 10a.5.5 0 0 1 .5.5V12h1.5a.5.5 0 1 1 0 1H14v1.5a.5.5 0 1 1-1 0V13h-1.5a.5.5 0 0 1 0-1H13v-1.5a.5.5 0 0 1 .5-.5z"/>
@@ -91,7 +91,7 @@
               </div>
 
               <div class="ms-3">
-                <button @click="playNow(filteredSongs)" class="playback-button">
+                <button @click="playNow(currentSongs)" class="playback-button">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
                     <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
                   </svg>
@@ -99,7 +99,7 @@
               </div>
 
               <div class="ms-2">
-                <button @click="addToQueue(filteredSongs)" class="playback-button">
+                <button @click="addToQueue(currentSongs)" class="playback-button">
                   <svg style="transform: scaleY(-1);" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-left" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4z"/>
                   </svg>
@@ -107,7 +107,7 @@
               </div>
 
               <div class="ms-2">
-                <button @click="addToQueue(filteredSongs, true)" class="playback-button">
+                <button @click="addToQueue(currentSongs, true)" class="playback-button">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-left" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4z"/>
                   </svg>
@@ -121,10 +121,13 @@
       <div v-if="view === 'library' && nav[0] !== '~Library'" class="bg-gray px-2 pb-1">
         <div class="opacity-75 small">
           {{ filteredSongs.length }} Song{{ filteredSongs.length !== 1 ? 's' : '' }}
+          <span v-if="selectedSongs.length > 0">
+            ({{ selectedSongs.length }} Selected) <button @click="selectedSongs = []" class="btn btn-link p-0" style="font-size: 1em;">Deselect all</button>
+          </span>
         </div>
       </div>
       <reorderable v-if="view === 'library' && nav[0].startsWith('playlist~') && search === ''" v-model="currentPlaylist.songs" @reorder="reorderPlaylist" :key-path="'id'" v-slot="{ item: song, i }" class="flex-grow-1 scroll-y" style="min-height: 0;">
-        <song-row :song="song" :i="i" show-artist="true" show-album="true"></song-row>
+        <song-row :song="song" :i="i" show-artist="true" show-album="true" :selected-songs="selectedSongs"></song-row>
       </reorderable>
       <div v-else class="flex-grow-1 scroll-y">
         <div v-if="view === 'library'">
@@ -184,7 +187,7 @@
               </div>
             </div>
 
-            <song-row v-for="(song, i) in filteredSongs" :song="song" :i="i" :show-artist="nav[0] === '~All Songs' || nav[0].startsWith('playlist~') || (nav[0].startsWith('album~') && nav[1] === '~Library') || multiArtistAlbum" :show-album="!nav[0].startsWith('album~')"></song-row>
+            <song-row v-for="(song, i) in filteredSongs" :song="song" :selected-songs="selectedSongs" :i="i" :show-artist="nav[0] === '~All Songs' || nav[0].startsWith('playlist~') || (nav[0].startsWith('album~') && nav[1] === '~Library') || multiArtistAlbum" :show-album="!nav[0].startsWith('album~')"></song-row>
           </div>
         </div>
       </div>
@@ -532,6 +535,10 @@
   <template id="song-row">
     <div class="border-bottom py-1">
       <div class="d-flex justify-content-between align-items-center">
+        <div class="ps-3">
+          <input type="checkbox" v-model="selected">
+        </div>
+
         <button @click="playNow(song)" class="btn w-100 text-truncate text-start">
           {{ song.title }}
           <div v-if="showArtist || showAlbum" class="small text-muted text-truncate">

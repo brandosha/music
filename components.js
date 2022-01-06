@@ -9,7 +9,7 @@ Vue.component("nav-button", {
 })
 
 Vue.component("song-row", {
-  props: ["song", "i", "showArtist", "showAlbum"],
+  props: ["song", "i", "showArtist", "showAlbum", "selectedSongs"],
   data() {
     const shared = ["nav", "options", "toggleOptions", "addToQueue", "playNow", "infoView", "playlist", "currentPage", "remove"]
     const data = {}
@@ -19,7 +19,23 @@ Vue.component("song-row", {
 
     return data
   },
-  template: document.getElementById("song-row").innerHTML
+  template: document.getElementById("song-row").innerHTML,
+
+  computed: {
+    selected: {
+      get() {
+        return this.selectedSongs.includes(this.song)
+      },
+      set(value) {
+        if (value) {
+          this.selectedSongs.push(this.song)
+        } else {
+          let index = this.selectedSongs.indexOf(this.song)
+          if (index > -1) this.selectedSongs.splice(index, 1)
+        }
+      }
+    }
+  }
 })
 
 Vue.component("reorderable", {

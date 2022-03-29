@@ -105,10 +105,8 @@ input[type="checkbox"]::after {
 
   transform: scale(0);
   transition: transform 0.15s ease-out;
-  /* opacity: 0; */
 }
 
 input[type="checkbox"]:checked::after {
-  /* opacity: 1; */
   transform: scale(1);
 }

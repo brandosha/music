@@ -285,7 +285,7 @@ var app = new Vue({
           promises.push(db.add(files[i]))
         }
 
-        if (file.name.endsWith("playlists.json")) {
+        if (file.name.endsWith(".json")) {
           playlistsJson = file
         }
       }
@@ -386,7 +386,8 @@ var app = new Vue({
     exportSelectedPlaylists() {
       const playlists = this.playlistExport.selected.map(name => db._playlistMap[name])
 
-      const songs = { }
+      const songs = []
+      const songIndices = {}
       const jsonPlaylists = []
       
       playlists.forEach(playlist => {
@@ -395,6 +396,24 @@ var app = new Vue({
         jsonPlaylists.push({
           name: playlist.name,
           songs: playlist.songs.map(song => {
+            let index = songIndices[song.id]
+            if (index === undefined) {
+              index = songs.length
+              songIndices[song.id] = index
+
+              const jsonSong = {
+                title: song.title
+              }
+              if (song.artist !== "unknown") jsonSong.artist = song.artist
+              if (song.album !== "unknown") jsonSong.album = song.album
+
+              songs.push(jsonSong)
+            }
+
+            return index
+
+
+
             const jsonSong = songs[song.id] = {
               title: song.title
             }

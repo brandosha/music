@@ -278,7 +278,7 @@
 
       const { songs, playlists } = json
 
-      const dbsongs = { }
+      const dbSongs = { }
       for (const id in songs) {
         const song = songs[id]
         if (!song.artist) song.artist = "unknown"
@@ -287,35 +287,24 @@
         const artist = this._artistMap[song.artist]
         if (!artist) continue
 
-        const dbsong = retrieveSorted(artist.songs, song, (a, b, i, arr) => {
-          const comparison = a.title.localeCompare(b.title)
-          if (comparison !== 0) return comparison
-          if (a.album === b.album) return 0
+        const album = artist.albumMap[song.album]
+        if (!album) continue
 
-          let offset = 1
-          while (true) {
-            const val = arr[i + offset]
-
-            if (!val || val.title !== song.title) return 1
-            if (val.album === song.album) return -1
-
-            offset += 1
-          }
-        })
+        const dbsong = retrieveSorted(album.songs, song, (a, b) => a.title.localeCompare(b.title))
         if (!dbsong) continue
 
-        dbsongs[id] = dbsong
+        dbSongs[id] = dbsong
       }
 
-      playlists.forEach(playlist => {
-        for (let i = playlist.songs.length - 1; i > 0; i--) {
+      for (const playlist of playlists) {
+        for (let i = playlist.songs.length - 1; i >= 0; i--) {
           const id = playlist.songs[i]
-          const song = dbsongs[id]
+          const song = dbSongs[id]
           if (song) {
-            song.addToPlaylist(playlist.name)
+            await song.addToPlaylist(playlist.name)
           }
         }
-      })
+      }
     }
 
     async clear() {

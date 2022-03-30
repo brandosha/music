@@ -411,16 +411,6 @@ var app = new Vue({
             }
 
             return index
-
-
-
-            const jsonSong = songs[song.id] = {
-              title: song.title
-            }
-            if (song.artist !== "unknown") jsonSong.artist = song.artist
-            if (song.album !== "unknown") jsonSong.album = song.album
-
-            return song.id
           })
         })
       })
@@ -481,6 +471,8 @@ var app = new Vue({
 
       this.showNowPlaying = false
       this.infoView.song = null
+
+      history.pushState(null, null, "#" + this.nav.join("/"))
     }
   },
   computed: {
@@ -823,7 +815,10 @@ db.onready = () => {
   app.playlists = db.playlists
   app.playlistExport.selected = db.playlists.map(p => p.name)
 
-  app.nav = JSON.parse(localStorage.getItem("music-nav")) || app.nav
+  const storedNav = JSON.parse(localStorage.getItem("music-nav"))
+  if (storedNav && storedNav.length > 0) {
+    app.nav = storedNav
+  }
 
   const queueData = JSON.parse(localStorage.getItem("music-queue"))
   if (queueData) {
@@ -888,6 +883,12 @@ function shuffle(array) {
   }
 
   return array;
+}
+
+window.onpopstate = () => {
+  if (app.nav.length > 1) {
+    app.nav.shift()
+  }
 }
 
 navigator.serviceWorker.register("service-worker.js")

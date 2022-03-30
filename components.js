@@ -4,6 +4,7 @@ Vue.component("nav-button", {
   methods: {
     navigate() {
       app.nav.unshift(this.page)
+      history.pushState(null, null, "#" + app.nav.join("/"))
     }
   }
 })

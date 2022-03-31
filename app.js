@@ -10,6 +10,7 @@ var app = new Vue({
     artists: [],
     albums: [],
     playlists: [],
+    autoPlaylists: [],
     
     queue: [],
     nextQueueItemKey: 0,
@@ -30,7 +31,10 @@ var app = new Vue({
     },
 
     playlistEditor: {
-      name: null
+      name: null,
+      query: false,
+
+      playlist: null
     },
     playlist: {
       adding: null,
@@ -39,6 +43,11 @@ var app = new Vue({
     playlistExport: {
       showing: false,
       selected: []
+    },
+    newPlaylist: {
+      showing: false,
+      name: "",
+      query: false
     },
 
     infoView: {
@@ -332,13 +341,25 @@ var app = new Vue({
       }
     },
 
+    invalidPlaylistName(name) {
+      return !name.trim() || db._playlistMap[name]
+    },
     async createPlaylist() {
-      const name = prompt("Enter a name for the new playlist:")
+      const name = this.newPlaylist.name
       if (name) {
-        await db.createPlaylist(name)
+        if (this.newPlaylist.query !== false) {
+          await db.createAutoPlaylist(name, this.newPlaylist.query)
+        } else {
+          await db.createPlaylist(name)
+        }
+
         this.nav = ["playlist~" + name, "~Library"]
         this.playlistExport.selected.push(name)
       }
+
+      this.newPlaylist.showing = false
+      this.newPlaylist.name = ""
+      this.newPlaylist.query = false
     },
     addSelectedToPlaylist() {
       const playlist = this.playlist
@@ -365,20 +386,23 @@ var app = new Vue({
         this.playlistEditor.name = null
       }
     },
-    renamePlaylist() {
+    async updatePlaylist() {
       const oldName = this.currentPage
-      const name = this.playlistEditor.name.trim()
+      const newName = this.playlistEditor.name.trim()
 
-      if (db._playlistMap[name]) {
-        alert(`A playlist with the name '${name}' already exists`)
-      } else {
-        db.renamePlaylist(oldName, name)
-
-        Vue.set(this.nav, 0, "playlist~" + name)
-
-        this.playlistEditor.name = null
-        this.playlistExport.selected.push(name)
+      const playlist = db._playlistMap[oldName]
+      if (oldName !== newName) {
+        await db.renamePlaylist(oldName, newName)
+        Vue.set(this.nav, 0, "playlist~" + newName)
       }
+
+      if (!playlist.songs && playlist.query !== this.playlistEditor.query) {
+        playlist.query = this.playlistEditor.query
+        await db.savePlaylist(newName)
+      }
+
+      this.playlistEditor.playlist = {}
+      this.playlistExport.selected.push(newName)
     },
     reorderPlaylist() {
       db.savePlaylist(this.currentPage)
@@ -391,11 +415,12 @@ var app = new Vue({
       const jsonPlaylists = []
       
       playlists.forEach(playlist => {
-        if (!playlist || playlist.songs.length === 0) return
+        if (!playlist) return
 
-        jsonPlaylists.push({
-          name: playlist.name,
-          songs: playlist.songs.map(song => {
+        const jsonPlaylist = { name: playlist.name }
+
+        if (playlist.songs) {
+          jsonPlaylist.songs = playlist.songs.map(song => {
             let index = songIndices[song.id]
             if (index === undefined) {
               index = songs.length
@@ -412,7 +437,11 @@ var app = new Vue({
 
             return index
           })
-        })
+        } else if (playlist.query) {
+          jsonPlaylist.query = playlist.query
+        }
+
+        jsonPlaylists.push(jsonPlaylist)
       })
 
       if (jsonPlaylists.length > 0) {
@@ -432,7 +461,7 @@ var app = new Vue({
         setTimeout(() => {
           link.href = ""
           URL.revokeObjectURL(url)
-        }, 10000)
+        }, 500)
       }
     },
 
@@ -507,39 +536,20 @@ var app = new Vue({
         Vue.set(this.navSearches, 0, search)
       }
     },
-    searchTerms() {
-      const search = this.search.trim().toLowerCase()
-      if (search === "") {
-        return null
-      } else {
-        const advancedSearchRegex = /(\s|^)(-)?(artist|album|playlist)?:?(".*?"|[^\s]*)/g
-        const matches = search.matchAll(advancedSearchRegex)
-
-        const searchTerms = { }
-        for (let [match, _, negative, param, value] of matches) {
-          if (value.startsWith('"')) { value = value.slice(1) }
-          if (value.endsWith('"')) { value = value.slice(0, -1) }
-
-          value = value.trim()
-          if (!value) continue
-
-          if (!param) param = "title"
-
-          let terms = searchTerms[param]
-          if (!terms) terms = searchTerms[param] = []
-
-          terms.push({ negative : !!negative, str: value })
-        }
-
-        return searchTerms
-      }
+    searchQuery() {
+      return new SearchQuery(this.search)
     },
     filteredSongs() {
       let songs = this.songs
 
       try {
         if (this.nav[0].startsWith("playlist~")) {
-          songs = this.currentPlaylist.songs
+          if (this.currentPlaylist.query !== undefined) {
+            const searchQuery = new SearchQuery(this.currentPlaylist.query)
+            songs = songs.filter(song => searchQuery.matches(song))
+          } else {
+            songs = this.currentPlaylist.songs
+          }
         } else if (this.nav[0].startsWith("artist~")) {
           const name = this.currentPage
           songs = db._artistMap[name].songs
@@ -558,40 +568,12 @@ var app = new Vue({
         return this.filteredSongs
       }
 
-      const searchTerms = this.searchTerms
-      if (!searchTerms) {
+      const search = this.searchQuery
+      if (!search.query) {
         return songs
       } else {
         return songs.filter(song => {
-          for (const param in searchTerms) {
-            if (param === "playlist") {
-              const playlists = song.playlists
-
-              for (const term of searchTerms[param]) {
-
-                let some = false
-                for (let [playlist] of playlists) {
-                  if (playlist.toLowerCase().includes(term.str)) {
-                    some = true
-                    break
-                  }
-                }
-
-                if (some === term.negative) return false
-              }
-            } else {
-              const value = song[param].toLowerCase()
-
-              for (const term of searchTerms[param]) {
-                const incl = value.includes(term.str)
-                if (incl === term.negative) {
-                  return false
-                }
-              }
-            }
-          }
-
-          return true
+          return search.matches(song)
         })
       }
     },
@@ -648,6 +630,24 @@ var app = new Vue({
       if (searchTerms.playlist) terms.push(...searchTerms.playlist)
 
       return this.playlists.filter(playlist => {
+        for (const term of terms) {
+          const incl = playlist.name.toLowerCase().includes(term.str)
+          if (term.negative === incl) return false
+        }
+
+        return true
+      })
+    },
+    filteredAutoPlaylists() {
+      const searchTerms = this.searchTerms
+      if (!searchTerms) return this.autoPlaylists
+
+      if (Object.keys(searchTerms).some(param => param !== "title" && param !== "playlist")) return []
+      const terms = []
+      if (searchTerms.title) terms.push(...searchTerms.title)
+      if (searchTerms.playlist) terms.push(...searchTerms.playlist)
+
+      return this.autoPlaylists.filter(playlist => {
         for (const term of terms) {
           const incl = playlist.name.toLowerCase().includes(term.str)
           if (term.negative === incl) return false
@@ -782,8 +782,13 @@ var app = new Vue({
       }, alert.duration)
     },
 
-    "playlistEditor.playlist": function(name) {
-      this.playlistEditor.name = name
+    "playlistEditor.playlist": function(playlist) {
+      this.playlistEditor.name = playlist.name
+      if (playlist.songs) {
+        this.playlistEditor.query = false
+      } else {
+        this.playlistEditor.query = playlist.query || ""
+      }
     },
     
     setMediaSessionActions() {
@@ -813,7 +818,8 @@ db.onready = () => {
   app.artists = db.artists
   app.albums = db.albums
   app.playlists = db.playlists
-  app.playlistExport.selected = db.playlists.map(p => p.name)
+  app.autoPlaylists = db.autoPlaylists
+  app.playlistExport.selected = Object.keys(db._playlistMap)
 
   const storedNav = JSON.parse(localStorage.getItem("music-nav"))
   if (storedNav && storedNav.length > 0) {

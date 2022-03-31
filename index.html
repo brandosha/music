@@ -38,7 +38,7 @@
             </h5>
 
             <div class="d-flex justify-content-end" style="width: 33.33%;">
-              <button v-if="nav[0].startsWith('playlist~')" @click="playlistEditor.name = currentPage" class="btn btn-link py-0">
+              <button v-if="nav[0].startsWith('playlist~')" @click="playlistEditor.playlist = currentPlaylist" class="btn btn-link py-0">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
                   <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
                   <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
@@ -126,7 +126,7 @@
           </span>
         </div>
       </div>
-      <reorderable v-if="view === 'library' && nav[0].startsWith('playlist~') && search === ''" v-model="currentPlaylist.songs" @reorder="reorderPlaylist" :key-path="'id'" v-slot="{ item: song, i }" class="flex-grow-1 scroll-y" style="min-height: 0;">
+      <reorderable v-if="view === 'library' && nav[0].startsWith('playlist~') && search === '' && currentPlaylist.songs" v-model="currentPlaylist.songs" @reorder="reorderPlaylist" :key-path="'id'" v-slot="{ item: song, i }" class="flex-grow-1 scroll-y" style="min-height: 0;">
         <song-row :song="song" :i="i" show-artist="true" show-album="true" :selected-songs="selectedSongs"></song-row>
       </reorderable>
       <div v-else class="flex-grow-1 scroll-y">
@@ -144,11 +144,27 @@
                 {{ playlist.name }}
               </nav-button>
 
-              <button v-if="!search" @click="createPlaylist" class="btn btn-link d-flex align-items-center">
+              <button v-if="!search" @click="newPlaylist.showing = true; newPlaylist.query = false" class="btn btn-link d-flex align-items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus me-1" viewBox="0 0 16 16">
                   <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
                 </svg>
                 Create Playlist
+              </button>
+            </div>
+
+            <div v-if="filteredAutoPlaylists.length > 0 || !search" class="mt-3">
+              <div class="px-2 py-1 border-bottom opacity-75 small">
+                Automatic Playlists
+              </div>
+              <nav-button v-for="playlist in filteredAutoPlaylists" :page="`playlist~${playlist.name}`" :key="playlist.name">
+                {{ playlist.name }}
+              </nav-button>
+
+              <button v-if="!search" @click="newPlaylist.showing = true; newPlaylist.query = ''" class="btn btn-link d-flex align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus me-1" viewBox="0 0 16 16">
+                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                </svg>
+                Create Automatic Playlist
               </button>
             </div>
 
@@ -187,7 +203,7 @@
               </div>
             </div>
 
-            <song-row v-for="(song, i) in filteredSongs" :song="song" :selected-songs="selectedSongs" :i="i" :show-artist="nav[0] === '~All Songs' || nav[0].startsWith('playlist~') || (nav[0].startsWith('album~') && nav[1] === '~Library') || multiArtistAlbum" :show-album="!nav[0].startsWith('album~')"></song-row>
+            <song-row v-for="(song, i) in filteredSongs" :key="song.id" :song="song" :selected-songs="selectedSongs" :i="i" :show-artist="nav[0] === '~All Songs' || nav[0].startsWith('playlist~') || (nav[0].startsWith('album~') && nav[1] === '~Library') || multiArtistAlbum" :show-album="!nav[0].startsWith('album~')"></song-row>
           </div>
         </div>
       </div>
@@ -444,6 +460,41 @@
       </div>
     </div>
 
+    <div v-if="newPlaylist.showing" class="full-page-modal d-flex flex-column justify-content-center p-3">
+      <!-- <div>
+        <h6>
+          Creating a New <span v-if="newPlaylist.query !== false">Automatic</span> Playlist
+        </h6>
+      </div> -->
+
+      <form @submit.prevent="createPlaylist">
+        <label class="d-block">
+          <h6>
+            Playlist Name
+          </h6>
+          
+          <input v-model="newPlaylist.name" type="text" class="form-control mb-3">
+        </label>
+
+        <label v-if="newPlaylist.query !== false" class="d-block">
+          <h6>
+            Query
+          </h6>
+          
+          <input v-model="newPlaylist.query" type="text" class="form-control mb-3">
+        </label>
+
+        <div class="d-flex justify-content-end mt-4">
+          <button type="button" @click="newPlaylist.showing = null; newPlaylist.name = ''" class="btn btn-sm btn-secondary">
+            Cancel
+          </button>
+          <button class="btn btn-sm btn-primary ms-3" :disabled="invalidPlaylistName(newPlaylist.name)">
+            Create
+          </button>
+        </div>
+      </form>
+    </div>
+
     <div v-if="playlist.adding" class="full-page-modal p-4 d-flex flex-column justify-content-center">
       <div v-if="playlist.adding.pop"> <!-- playlist.adding is an array -->
         <h6 v-if="playlist.adding.length === 1">
@@ -474,7 +525,7 @@
       </form>
     </div>
 
-    <div v-if="playlistEditor.name !== null" class="full-page-modal d-flex flex-column justify-content-center p-3">
+    <div v-if="playlistEditor.name != null" class="full-page-modal d-flex flex-column justify-content-center p-3">
       <label>
         <h6>
           Playlist Name
@@ -482,17 +533,25 @@
         
         <input v-model="playlistEditor.name" type="text" class="form-control mb-2">
       </label>
+
+      <label v-if="playlistEditor.query !== false" class="d-block my-4">
+        <h6>
+          Query
+        </h6>
+        
+        <input v-model="playlistEditor.query" type="text" class="form-control">
+      </label>
       
       <div class="d-flex justify-content-end">
         <button @click="removePlaylist" class="btn btn-sm btn-danger">
           Delete Playlist
         </button>
 
-        <button @click="playlistEditor.name = null" class="btn btn-sm btn-secondary ms-2">
+        <button @click="playlistEditor.playlist = { }" class="btn btn-sm btn-secondary ms-2">
           Cancel
         </button>
 
-        <button @click="renamePlaylist" class="btn btn-sm btn-primary ms-2" :disabled="!playlistEditor.name.trim()">
+        <button @click="updatePlaylist" class="btn btn-sm btn-primary ms-2" :disabled="playlistEditor.name !== playlistEditor.playlist.name && invalidPlaylistName(playlistEditor.name)">
           Save
         </button>
       </div>
@@ -504,7 +563,7 @@
       </h5>
 
       <div class="scroll-y">
-        <div v-for="playlist in playlists" class="d-flex align-items-center">
+        <div v-for="playlist in playlists.concat(autoPlaylists)" class="d-flex align-items-center">
           <label class="d-block p-1">
             <input type="checkbox" v-model="playlistExport.selected" :value="playlist.name" class="me-2">
   
@@ -636,6 +695,7 @@
   <script src="lib/music-metadata-browser.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
 
+  <script src="search-query.js"></script>
   <script src="db.js"></script>
   <script src="components.js"></script>
   <script src="app.js"></script>

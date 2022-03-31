@@ -33,32 +33,23 @@
 
         const db = openRequest.result
 
-        const deleteStore = (name) => {
-          try {
-            db.deleteObjectStore(name)
-          } catch (error) {
-            // Ignore
-          }
+        if (!db.objectStoreNames.contains('songs')) {
+          const songStore = db.createObjectStore('songs', { keyPath: 'id' })
+          songStore.createIndex('title', 'title', { unique: false })
+          // songStore.createIndex('artist', 'artist', { unique: false })
+          // songStore.createIndex('album', 'album', { unique: false })
         }
 
-        deleteStore('files')
-        deleteStore('songs')
-        deleteStore('playlists')
-        deleteStore('titles')
-
-        const songStore = db.createObjectStore('songs', { keyPath: 'id' })
-        songStore.createIndex('title', 'title', { unique: false })
-        songStore.createIndex('artist', 'artist', { unique: false })
-        songStore.createIndex('album', 'album', { unique: false })
-
-        const playlistStore = db.createObjectStore('playlists', { keyPath: 'name' })
+        if (!db.objectStoreNames.contains('playlists')) {
+          db.createObjectStore('playlists', { keyPath: 'name' })
+        }
       }
 
       try {
         /** @type { IDBDatabase } */
         this.database = await idbPromise(openRequest)
       } catch (err) {
-        await idbPromise(indexedDB.deleteDatabase())
+        await idbPromise(indexedDB.deleteDatabase('music-db'))
         this.init()
         return
       }
@@ -147,21 +138,31 @@
       const playlists = await idbPromise(playlistStore.getAll())
 
       const playlistMap = { }
-      this.playlists = playlists.map(playlist => {
-        const list = { name: playlist.name, songs: [] }
+      this.playlists = []
+      this.autoPlaylists = []
+      
+      playlists.forEach(playlist => {
+        const list = { name: playlist.name }
 
-        playlist.songs.forEach(id => {
-          const song = songMap[id]
+        if (playlist.songs) {
+          list.songs = []
+          playlist.songs.forEach(id => {
+            const song = songMap[id]
+  
+            if (song) {
+              list.songs.push(song)
+              song.playlists.set(list.name, list)
+            }
+          })
 
-          if (song) {
-            list.songs.push(song)
-            song.playlists.set(list.name, list)
-          }
-        })
+          this.playlists.push(list)
+        } else {
+          list.query = playlist.query || ""
+
+          this.autoPlaylists.push(list)
+        }
 
         playlistMap[playlist.name] = list
-
-        return list
       })
       this._playlistMap = playlistMap
 
@@ -209,6 +210,21 @@
       }
     }
 
+    async createAutoPlaylist(name, query) {
+      const existingPlaylist = this._playlistMap[name]
+      if (existingPlaylist) return existingPlaylist
+
+      const transaction = this.database.transaction(['playlists'], 'readwrite')
+      const playlistStore = transaction.objectStore('playlists')
+
+      const list = { name, query }
+      await idbPromise(playlistStore.add(list))
+
+      insertSorted(this.autoPlaylists, list, (a, b) => a.name.localeCompare(b.name))
+      this._playlistMap[name] = list
+
+      return list
+    }
     async createPlaylist(name, songs = []) {
       const existingPlaylist = this._playlistMap[name]
       if (existingPlaylist) return existingPlaylist
@@ -231,7 +247,13 @@
       await idbPromise(playlistStore.delete(name))
 
       const list = this._playlistMap[name]
-      this.playlists.splice(this.playlists.indexOf(list), 1)
+
+      if (list.songs) {
+        this.playlists.splice(this.playlists.indexOf(list), 1)
+      } else {
+        this.autoPlaylists.splice(this.autoPlaylists.indexOf(list), 1)
+      }
+      
       this._playlistMap[name] = undefined
     }
     async renamePlaylist(oldName, newName) {
@@ -239,10 +261,12 @@
       if (!playlist) return
 
       playlist.name = newName
-      playlist.songs.forEach(song => {
-        song.playlists.delete(oldName)
-        song.playlists.set(newName, playlist)
-      })
+      if (playlist.songs) {
+        playlist.songs.forEach(song => {
+          song.playlists.delete(oldName)
+          song.playlists.set(newName, playlist)
+        })
+      }
 
       this._playlistMap[newName] = playlist
       this._playlistMap[oldName] = undefined
@@ -250,12 +274,16 @@
       const transaction = this.database.transaction(['playlists'], 'readwrite')
       const playlistStore = transaction.objectStore('playlists')
 
+      const storedPlaylist = { name: playlist.name }
+      if (playlist.songs) {
+        storedPlaylist.songs = playlist.songs.map(song => song.id)
+      } else if (playlist.query) {
+        storedPlaylist.query = playlist.query
+      }
+
       await idbPromise(playlistStore.delete(oldName))
       await idbPromise(
-        playlistStore.put({
-          name: newName,
-          songs: playlist.songs.map(song => song.id)
-        })
+        playlistStore.put(storedPlaylist)
       )
     }
     async savePlaylist(name) {
@@ -265,11 +293,15 @@
       const transaction = this.database.transaction(['playlists'], 'readwrite')
       const playlistStore = transaction.objectStore('playlists')
 
+      const storedPlaylist = { name: playlist.name }
+      if (playlist.songs) {
+        storedPlaylist.songs = playlist.songs.map(song => song.id)
+      } else if (playlist.query) {
+        storedPlaylist.query = playlist.query
+      }
+
       await idbPromise(
-        playlistStore.put({
-          name: playlist.name,
-          songs: playlist.songs.map(song => song.id)
-        })
+        playlistStore.put(storedPlaylist)
       )
     }
 
@@ -297,11 +329,21 @@
       }
 
       for (const playlist of playlists) {
-        for (let i = playlist.songs.length - 1; i >= 0; i--) {
-          const id = playlist.songs[i]
-          const song = dbSongs[id]
-          if (song) {
-            await song.addToPlaylist(playlist.name)
+        if (playlist.songs) {
+          for (let i = playlist.songs.length - 1; i >= 0; i--) {
+            const id = playlist.songs[i]
+            const song = dbSongs[id]
+            if (song) {
+              await song.addToPlaylist(playlist.name)
+            }
+          }
+        } else {
+          const existing = this._playlistMap[playlist.name]
+          if (existing) {
+            existing.query = playlist.query
+            await this.savePlaylist(playlist.name)
+          } else {
+            await this.createAutoPlaylist(playlist.name, playlist.query)
           }
         }
       }

@@ -300,8 +300,9 @@ var app = new Vue({
       }
 
       const songs = await Promise.all(promises)
-      if (this.nav[0].startsWith("playlist~")) {
-        songs.forEach(song => song.addToPlaylist(this.currentPage))
+      const currentPlaylist = this.currentPlaylist
+      if (currentPlaylist && currentPlaylist.songs) {
+        songs.forEach(song => song.addToPlaylist(currentPlaylist))
       }
 
       if (playlistsJson) {

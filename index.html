@@ -17,7 +17,7 @@
         <div v-if="view === 'library'">
           <input @change="upload" type="file" multiple class="d-none">
           <button class="btn btn-sm btn-secondary w-100" onclick="this.previousElementSibling.click()">
-            Add Files {{ nav[0].startsWith('playlist~') ? 'to Playlist' : 'to Library' }}
+            Add Files {{ currentPlaylist && currentPlaylist.songs ? 'to Playlist' : 'to Library' }}
           </button>
 
           <div class="d-flex align-items-center mt-2">

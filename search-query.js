@@ -17,8 +17,10 @@ class SearchQuery {
 
         value = value.trim()
         if (!value) continue
+        // value = escapeRegExp(value)
+        // value = value.replace("*", ".*")
 
-        if (!param) param = "title"
+        if (!param) param = "*"
 
         let existingTerms = searchTerms[param]
         if (!existingTerms) existingTerms = searchTerms[param] = []
@@ -32,14 +34,33 @@ class SearchQuery {
     const terms = this.searchTerms
 
     for (const param in terms) {
-      if (param === "playlist") {
+      // const term = terms[param]
+      // const regex = new RegExp(term.str.map(term => term.str).join("|"), "i")
+      if (param === "*") {
+        for (const term of terms[param]) {
+          const regex = new RegExp(term.str, "i")
+
+          let some = false
+          for (let [playlist] of song.playlists) {
+            if (regex.test(playlist)) {
+              some = true
+              break
+            }
+          }
+
+          some = some || [song.artist, song.album, song.title].some(str => regex.test(str))
+
+          if (some === term.negative) return false
+        }
+      } else if (param === "playlist") {
         const playlists = song.playlists
 
         for (const term of terms[param]) {
+          const regex = new RegExp(term.str, "i")
 
           let some = false
           for (let [playlist] of playlists) {
-            if (playlist.toLowerCase().includes(term.str)) {
+            if (regex.test(playlist)) {
               some = true
               break
             }
@@ -51,7 +72,7 @@ class SearchQuery {
         const value = song[param].toLowerCase()
 
         for (const term of terms[param]) {
-          const incl = value.includes(term.str)
+          const incl = new RegExp(term.str).test(value)
           if (incl === term.negative) {
             return false
           }
@@ -61,4 +82,8 @@ class SearchQuery {
 
     return true
   }
+}
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }

@@ -578,12 +578,12 @@ var app = new Vue({
       }
     },
     filteredArtists() {
-      const searchTerms = this.searchTerms
+      const searchTerms = this.searchQuery.searchTerms
       if (!searchTerms) return this.artists
 
-      if (Object.keys(searchTerms).some(param => param !== "title" && param !== "artist")) return []
+      if (Object.keys(searchTerms).some(param => param !== "*" && param !== "artist")) return []
       const terms = []
-      if (searchTerms.title) terms.push(...searchTerms.title)
+      if (searchTerms["*"]) terms.push(...searchTerms["*"])
       if (searchTerms.artist) terms.push(...searchTerms.artist)
 
       return this.artists.filter(artist => {
@@ -603,12 +603,12 @@ var app = new Vue({
         albums = db._artistMap[artist].albums
       }
 
-      const searchTerms = this.searchTerms
+      const searchTerms = this.searchQuery.searchTerms
       if (!searchTerms) return albums
 
-      if (Object.keys(searchTerms).some(param => param !== "title" && param !== "album")) return []
+      if (Object.keys(searchTerms).some(param => param !== "*" && param !== "album")) return []
       const terms = []
-      if (searchTerms.title) terms.push(...searchTerms.title)
+      if (searchTerms["*"]) terms.push(...searchTerms["*"])
       if (searchTerms.album) terms.push(...searchTerms.album)
 
       return albums.filter(album => {
@@ -621,12 +621,12 @@ var app = new Vue({
       })
     },
     filteredPlaylists() {
-      const searchTerms = this.searchTerms
+      const searchTerms = this.searchQuery.searchTerms
       if (!searchTerms) return this.playlists
 
-      if (Object.keys(searchTerms).some(param => param !== "title" && param !== "playlist")) return []
+      if (Object.keys(searchTerms).some(param => param !== "*" && param !== "playlist")) return []
       const terms = []
-      if (searchTerms.title) terms.push(...searchTerms.title)
+      if (searchTerms["*"]) terms.push(...searchTerms["*"])
       if (searchTerms.playlist) terms.push(...searchTerms.playlist)
 
       return this.playlists.filter(playlist => {
@@ -639,12 +639,12 @@ var app = new Vue({
       })
     },
     filteredAutoPlaylists() {
-      const searchTerms = this.searchTerms
+      const searchTerms = this.searchQuery.searchTerms
       if (!searchTerms) return this.autoPlaylists
 
-      if (Object.keys(searchTerms).some(param => param !== "title" && param !== "playlist")) return []
+      if (Object.keys(searchTerms).some(param => param !== "*" && param !== "playlist")) return []
       const terms = []
-      if (searchTerms.title) terms.push(...searchTerms.title)
+      if (searchTerms["*"]) terms.push(...searchTerms["*"])
       if (searchTerms.playlist) terms.push(...searchTerms.playlist)
 
       return this.autoPlaylists.filter(playlist => {

@@ -302,7 +302,7 @@ var app = new Vue({
       const songs = await Promise.all(promises)
       const currentPlaylist = this.currentPlaylist
       if (currentPlaylist && currentPlaylist.songs) {
-        songs.forEach(song => song.addToPlaylist(currentPlaylist))
+        songs.forEach(song => song.addToPlaylist(currentPlaylist.name))
       }
 
       if (playlistsJson) {

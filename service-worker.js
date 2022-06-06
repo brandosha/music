@@ -9,6 +9,8 @@ self.addEventListener('install', async event => {
       caches.delete(key)
     }
   })
+
+  self.skipWaiting()
 })
 
 self.addEventListener("fetch", event => {
@@ -88,11 +90,17 @@ async function getFile(req) {
   }
 }
 
+const recentlyUpdatedArt = {}
+console.log("Service Worker started", recentlyUpdatedArt)
+
 async function getAlbumArt(req, path) {
   const cache = await caches.open(fileCacheName)
   const cachedFile = await cache.match(req)
   if (cachedFile) {
-    fetchArt(req, path)
+    if (!recentlyUpdatedArt[path]) {
+      fetchArt(req, path)
+    }
+
     return cachedFile
   } else {
     try {
@@ -104,11 +112,9 @@ async function getAlbumArt(req, path) {
 }
 async function fetchArt(req, path) {
   const [artist, album] = path.split('/').map(a => decodeURIComponent(a))
-  console.log(artist, album)
 
   let query = `"${escapeQuery(album)}" artistname:"${escapeQuery(artist)}"`
   const searchResult = await fetch(`https://musicbrainz.org/ws/2/release/?fmt=json&limit=1&query=` + encodeURIComponent(query)).then(res => res.json())
-  console.log(searchResult)
 
   if (!searchResult.releases || !searchResult.releases[0]) {
     return new Response(null, { status: 404 })
@@ -116,9 +122,10 @@ async function fetchArt(req, path) {
 
   const release = searchResult.releases[0]
   const art = await fetch(`https://coverartarchive.org/release/${release.id}/front`)
-  console.log(art)
 
   if (art.ok) {
+    recentlyUpdatedArt[path] = true
+
     const cache = await caches.open(fileCacheName)
     cache.put(req, art.clone())
     return art

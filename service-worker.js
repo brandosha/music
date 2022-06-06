@@ -23,32 +23,9 @@ async function respond(req) {
   const url = new URL(req.url)
 
   if (url.pathname.startsWith(swPath + '/file-uploads/')) {
-    const cache = await caches.open(fileCacheName)
-    const cachedFile = await cache.match(req)
-
-    if (cachedFile) {
-      const range = req.headers.get("Range")
-      if (range) {
-        const parts = range.split("=")
-        const start = parseInt(parts[1].split("-")[0])
-        const end = parseInt(parts[1].split("-")[1])
-
-        const file = await cachedFile.blob()
-        const blob = file.slice(start, end + 1)
-        return new Response(blob, {
-          headers: {
-            "Content-Range": `bytes ${start}-${end}/${file.size}`,
-            "Content-Length": end - start + 1,
-            "Content-Type": file.type
-          },
-          status: 206
-        })
-      }
-
-      return cachedFile
-    } else {
-      return new Response(null, { status: 404 })
-    }
+    return getFile(req)
+  } else if (url.pathname.startsWith(swPath + '/album-art/')) {
+    return getAlbumArt(req, url.pathname.slice(swPath.length + 11))
   } else {
     const cache = await caches.open(networkCacheName)
     const cachedResponse = await cache.match(req)
@@ -80,6 +57,75 @@ async function respond(req) {
       }
     }
   }
+}
+
+async function getFile(req) {
+  const cache = await caches.open(fileCacheName)
+  const cachedFile = await cache.match(req)
+
+  if (cachedFile) {
+    const range = req.headers.get("Range")
+    if (range) {
+      const parts = range.split("=")
+      const start = parseInt(parts[1].split("-")[0])
+      const end = parseInt(parts[1].split("-")[1])
+
+      const file = await cachedFile.blob()
+      const blob = file.slice(start, end + 1)
+      return new Response(blob, {
+        headers: {
+          "Content-Range": `bytes ${start}-${end}/${file.size}`,
+          "Content-Length": end - start + 1,
+          "Content-Type": file.type
+        },
+        status: 206
+      })
+    }
+
+    return cachedFile
+  } else {
+    return new Response(null, { status: 404 })
+  }
+}
+
+async function getAlbumArt(req, path) {
+  const cache = await caches.open(fileCacheName)
+  const cachedFile = await cache.match(req)
+  if (cachedFile) {
+    fetchArt(req, path)
+    return cachedFile
+  } else {
+    try {
+      return await fetchArt(req, path)
+    } catch (err) {
+      return new Response(err.message, { status: 404 })
+    }
+  }
+}
+async function fetchArt(req, path) {
+  const [artist, album] = path.split('/').map(a => decodeURIComponent(a))
+  console.log(artist, album)
+
+  let query = `"${escapeQuery(album)}" artistname:"${escapeQuery(artist)}"`
+  const searchResult = await fetch(`https://musicbrainz.org/ws/2/release/?fmt=json&limit=1&query=` + encodeURIComponent(query)).then(res => res.json())
+  console.log(searchResult)
+
+  if (!searchResult.releases || !searchResult.releases[0]) {
+    return new Response(null, { status: 404 })
+  }
+
+  const release = searchResult.releases[0]
+  const art = await fetch(`https://coverartarchive.org/release/${release.id}/front`)
+  console.log(art)
+
+  if (art.ok) {
+    const cache = await caches.open(fileCacheName)
+    cache.put(req, art.clone())
+    return art
+  }
+}
+function escapeQuery(str) {
+  return str.replace(/[+\-!(){}\[\]^"~*?:\\/]/g, m => '\\' + m)
 }
 
 async function cacheRequest(req, res) {

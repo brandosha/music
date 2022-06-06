@@ -609,36 +609,19 @@
     artUrl() {
       if (this.album === "unknown" || this.artist === "unknown") return null
 
-      const album = db._albumMap[this.album]
-      if (album._art) return album._art
+      const baseUrl = location.origin + location.pathname
+      let url = baseUrl + 'album-art/'
 
-      let query = this.album
       const { artists } = this
       if (artists.length > 1) {
-        query += ` artistname:"${artists[1]}"`
+        url += encodeURIComponent(artists[1])
       } else {
-        query += ` artistname:"${this.artist}"`
+        url += encodeURIComponent(this.artist)
       }
 
-      album._art = fetch(`https://musicbrainz.org/ws/2/release/?fmt=json&limit=1&query=` + encodeURIComponent(query))
-      .then(res => res.json())
-      .then(json => {
-        if (!json.releases || !json.releases[0]) return null
-        const obj = json.releases[0]
+      url += '/' + encodeURIComponent(this.album)
 
-        return fetch(`https://coverartarchive.org/release/${obj.id}`)
-      })
-      .then(res => res.json())
-      .then(json => {
-        let url = json.images[0].image
-        if (url.startsWith("http:")) {
-          url = url.replace("http:", "https:")
-        }
-        return url
-      })
-      .catch(err => {
-        return null
-      })
+      return url
     }
   }
 

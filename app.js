@@ -124,9 +124,6 @@ var app = new Vue({
       }
 
       player.onended = () => this.playNext()
-
-      // Fetch and cache the album art
-      song.artUrl()
     },
     playNow(song) {
       const alert = this.alert
@@ -197,9 +194,7 @@ var app = new Vue({
 
           const art = song.artUrl()
           if (art) {
-            art.then(url => {
-              if (url) metadata.artwork = [{ src: url }]
-            })
+            metadata.artwork = [{ src: art }]
           }
 
           mediaSession.metadata = metadata
@@ -860,9 +855,6 @@ db.onready = () => {
       }
 
       queue.push({ song, player, key: app.nextQueueItemKey++ })
-
-      // Fetch and cache the album art
-      song.artUrl()
     })
 
     app.queue = queue

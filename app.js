@@ -375,6 +375,11 @@ var app = new Vue({
       playlist.adding = null
       playlist.name = ""
     },
+    removeSelectedFromPlaylist() {
+      this.currentSongs.forEach(song => {
+        song.removeFromPlaylist(this.currentPage)
+      })
+    },
     removePlaylist() {
       if (confirm(`Are you sure you want to delete the playlist '${this.currentPage}'?`)) {
         db.removePlaylist(this.currentPage)

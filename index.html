@@ -403,8 +403,8 @@
       </div>
     </div>
 
-    <div v-if="infoView.song" class="full-page-modal d-flex flex-column justify-content-center p-4">
-      <h5>
+    <div v-if="infoView.song" class="full-page-modal overflow-scroll d-flex flex-column p-4">
+      <h5 class="mt-auto">
         {{ infoView.song.title }}
       </h5>
 
@@ -462,7 +462,7 @@
         </div>
       </div>
 
-      <div class="d-flex justify-content-end mt-3">
+      <div class="d-flex justify-content-end mt-3 mb-auto">
         <button @click="infoView.song = null" class="btn btn-primary">
           Done
         </button>

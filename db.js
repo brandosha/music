@@ -247,8 +247,10 @@
       await idbPromise(playlistStore.delete(name))
 
       const list = this._playlistMap[name]
+      if (!list) return
 
       if (list.songs) {
+        list.songs.forEach(song.playlists.delete(name))
         this.playlists.splice(this.playlists.indexOf(list), 1)
       } else {
         this.autoPlaylists.splice(this.autoPlaylists.indexOf(list), 1)
@@ -330,6 +332,12 @@
 
       for (const playlist of playlists) {
         if (playlist.songs) {
+          const list = this._playlistMap[playlist.name]
+          if (list) {
+            list.songs.forEach(s => s.playlists.delete(playlist.name))
+            list.songs = []
+          }
+
           for (let i = playlist.songs.length - 1; i >= 0; i--) {
             const id = playlist.songs[i]
             const song = dbSongs[id]
@@ -393,7 +401,6 @@
 
       if (db._artistMap) {
         this.setArtist(data.artist || "unknown", true)
-        this.setAlbum(data.album || "unknown", true)
       }
 
       existingSongs[id] = this
@@ -487,51 +494,6 @@
       this.artists.forEach(name => {
         this._addToArtist(name)
       })
-    }
-
-    async setAlbum(name, force = false) {
-      if (!force && name == this.album) return
-
-      const artist = db._artistMap[this.artist]
-
-      try {
-        let previousAlbum = artist.albumMap[this.album]
-        const index = previousAlbum.songs.indexOf(this)
-        if (index > -1) {
-          previousAlbum.songs.splice(index, 1)
-        }
-
-        if (previousAlbum.songs.length === 0) {
-          artist.albums.splice(artist.albums.indexOf(previousAlbum), 1)
-          artist.albumMap[this.album] = undefined
-        }
-      } catch (err) { }
-      
-      
-      let album = db._albumMap[this.album]
-      if (!album) {
-        album = {
-          name: this.album,
-          artist,
-          songs: [],
-          songMap: { }
-        }
-        
-        insertSorted(db.albums, album, (a, b) => a.name.localeCompare(b.name))
-        albumMap[album.name] = album
-      }
-
-      if (!artist.albumMap[album.name]) {
-        insertSorted(artist.albums, album, (a, b) => a.name.localeCompare(b.name))
-        artist.albumMap[album.name] = album
-      }
-
-      if (!album.songMap[this.id]) {
-        insertSorted(album.songs, this, (a, b) => a.title.localeCompare(b.title))
-        album.songMap[this.id] = this
-      }
-
-      this.album = name
     }
 
     async updateInStore() {

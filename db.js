@@ -149,7 +149,7 @@
           playlist.songs.forEach(id => {
             const song = songMap[id]
   
-            if (song) {
+            if (song && !song.playlists.has(list.name)) {
               list.songs.push(song)
               song.playlists.set(list.name, list)
             }
@@ -531,11 +531,11 @@
       const playlistStore = transaction.objectStore('playlists')
 
       const playlist = await idbPromise(playlistStore.get(name))
+      console.log(playlist, db._playlistMap[name])
       if (playlist) {
-        playlist.songs.unshift(this.id)
-        await idbPromise(playlistStore.put(playlist))
-
         db._playlistMap[name].songs.unshift(this)
+        playlist.songs = db._playlistMap[name].songs.map(s => s.id)
+        await idbPromise(playlistStore.put(playlist))
       } else {
         await idbPromise(playlistStore.put({ name, songs: [this.id] }))
 

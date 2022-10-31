@@ -124,6 +124,9 @@ var app = new Vue({
       }
 
       player.onended = () => this.playNext()
+      player.onplay = () => {
+        if (player !== this.player) player.pause()
+      }
     },
     playNow(song) {
       const alert = this.alert

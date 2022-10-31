@@ -108,6 +108,10 @@ var app = new Vue({
       const player = new Audio(song.fileUrl())
       player.setAttribute("x-webkit-airplay", "allow")
       player.preload = "none"
+      player.onended = () => this.playNext()
+      player.onplay = () => {
+        if (player !== this.player) player.pause()
+      }
 
       const queueObj = { song, player, key: this.nextQueueItemKey++ }
       if (next) {
@@ -121,11 +125,6 @@ var app = new Vue({
 
       if (!this.currentSong) {
         this.playNext()
-      }
-
-      player.onended = () => this.playNext()
-      player.onplay = () => {
-        if (player !== this.player) player.pause()
       }
     },
     playNow(song) {
@@ -832,7 +831,9 @@ db.onready = () => {
 
   const queueData = JSON.parse(localStorage.getItem("music-queue"))
   if (queueData) {
-    const queue = []
+    // const queue = []
+
+    app.alert.ignore = true
 
     let index = -1
     queueData.queue.forEach(id => {
@@ -844,7 +845,23 @@ db.onready = () => {
         index += 1
       }
 
-      const player = new Audio(song.fileUrl())
+      app.addToQueue(song)
+
+      if (index === queueData.index) {
+        const player = app.queue[index].player
+        player.preload = "metadata"
+        player.oncanplay = () => {
+          app.$forceUpdate()
+          
+          player.preload = "none"
+          player.oncanplay = undefined
+        }
+        player.onerror = () => {
+          player.preload = "none"
+        }
+      }
+
+      /*const player = new Audio(song.fileUrl())
       player.setAttribute("x-webkit-airplay", "allow")
       player.preload = "none"
       player.onended = () => app.playNext()
@@ -862,10 +879,12 @@ db.onready = () => {
         }
       }
 
-      queue.push({ song, player, key: app.nextQueueItemKey++ })
+      queue.push({ song, player, key: app.nextQueueItemKey++ })*/
     })
 
-    app.queue = queue
+    // app.queue = queue
+    app.alert.ignore = false
+
     app.willLoop = queueData.loop
     app.willShuffle = queueData.willShuffle
 
